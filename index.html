@@ -149,23 +149,24 @@ async function getFitbitAccessToken() {
 }
 async function fitbitGet(path) {
   const token = await getFitbitAccessToken();
-  if (!token) throw new Error("Not connected to Fitbit");
-  const res = await fetch("https://api.fitbit.com" + path, {
-    headers: { Authorization: "Bearer " + token }
-  });
-  if (res.status === 401) { clearFitbitToken(); throw new Error("Fitbit session expired — please reconnect"); }
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.errors?.[0]?.message || `Fitbit error ${res.status}`);
+  if (!token) throw new Error("No Fitbit token — please reconnect");
+  let res;
+  try {
+    res = await fetch("https://api.fitbit.com" + path, { headers: { Authorization: "Bearer " + token } });
+  } catch(netErr) {
+    throw new Error("Network/CORS error on " + path + ": " + (netErr.message || String(netErr)));
+  }
+  if (res.status === 401) { clearFitbitToken(); throw new Error("Fitbit token rejected (401) — please reconnect"); }
+  let data; try { data = await res.json(); } catch { throw new Error("Non-JSON from " + path + " (HTTP " + res.status + ")"); }
+  if (!res.ok) throw new Error("Fitbit error on " + path + ": " + (data.errors?.[0]?.message || res.status));
   return data;
 }
 
-// Fetch today's Fitbit data (steps, sleep from last night, HR, activity summary)
+// Fetch today's Fitbit data sequentially so we can pinpoint which call fails
 async function fetchFitbitDay() {
-  const [actSum, sleepData, hrData] = await Promise.all([
-    fitbitGet(`/1/user/-/activities/date/${today()}.json`),
-    fitbitGet(`/1.2/user/-/sleep/date/${today()}.json`),
-    fitbitGet(`/1/user/-/activities/heart/date/${today()}/1d.json`),
-  ]);
+  const actSum    = await fitbitGet("/1/user/-/activities/date/" + today() + ".json");
+  const sleepData = await fitbitGet("/1.2/user/-/sleep/date/" + today() + ".json");
+  const hrData    = await fitbitGet("/1/user/-/activities/heart/date/" + today() + "/1d.json");
 
   const steps        = actSum.summary?.steps ?? 0;
   const activeMin    = actSum.summary?.fairlyActiveMinutes + actSum.summary?.veryActiveMinutes ?? 0;
