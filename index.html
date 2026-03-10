@@ -895,6 +895,9 @@ function SettingsScreen({ onClose }) {
           {saved ? "Saved ✓" : "Save key"}
         </button>
         <div style={{ marginTop:10, fontSize:12, color:"#a07850", lineHeight:1.7 }}>Stored only in this browser. Get a key at <b>console.anthropic.com</b></div>
+        <div style={{ marginTop:10, fontSize:12, color:"#6a9e6a", fontFamily:"monospace", wordBreak:"break-all" }}>
+          {key ? `Stored key: ${key.slice(0,10)}...${key.slice(-4)} (${key.length} chars)` : "No key stored"}
+        </div>
       </div>
 
       <div style={{ borderTop:"1px solid #ecdfc8", paddingTop:20 }}>
