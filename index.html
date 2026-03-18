@@ -1232,66 +1232,75 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
 
 
 // ── Blood Pressure Section ────────────────────────────────────────────────────
+function bpCategory(s, d) {
+  if (!s || !d) return null;
+  const sv = Number(s), dv = Number(d);
+  if (sv > 180 || dv > 120) return { label:"Hypertensive Crisis", short:"Crisis",    bg:"#fce8e8", border:"#b02020", text:"#7a0000", dot:"#b02020" };
+  if (sv >= 140 || dv >= 90) return { label:"High — Stage 2",     short:"Stage 2",   bg:"#fdf0ee", border:"#c87a6a", text:"#8a2a1a", dot:"#c87a6a" };
+  if (sv >= 130 || dv >= 80) return { label:"High — Stage 1",     short:"Stage 1",   bg:"#fdf5ec", border:"#c8955a", text:"#7a4010", dot:"#c8955a" };
+  if (sv >= 120 && dv < 80)  return { label:"Elevated",           short:"Elevated",  bg:"#fffbe8", border:"#c8b030", text:"#6a5000", dot:"#c8b030" };
+  return                             { label:"Normal",             short:"Normal",    bg:"#edfaf2", border:"#6a9e6a", text:"#2d6a3f", dot:"#6a9e6a" };
+}
+
 function BPSection({ entry, onUpdate }) {
   const [systolic, setSystolic]   = useState(entry.bpSystolic  || "");
   const [diastolic, setDiastolic] = useState(entry.bpDiastolic || "");
   const [pulse, setPulse]         = useState(entry.bpPulse     || "");
   const [note, setNote]           = useState(entry.bpNote      || "");
-  const [savedFlash, setSavedFlash] = useState(false);
+  const [banner, setBanner]       = useState(null);
 
   const save = () => {
     if (!systolic || !diastolic) return;
     onUpdate({ bpSystolic: systolic, bpDiastolic: diastolic, bpPulse: pulse, bpNote: note });
-    setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1500);
+    const cat = bpCategory(systolic, diastolic);
+    const p = pulse ? ` · Pulse ${pulse} bpm` : "";
+    const msgs = {
+      "Normal":            `All good — ${systolic}/${diastolic} mmHg is in the normal range.${p}`,
+      "Elevated":          `${systolic}/${diastolic} mmHg is slightly elevated — worth keeping an eye on.${p}`,
+      "Stage 1":           `${systolic}/${diastolic} mmHg is Stage 1 high. Try to reduce stress and salt today.${p}`,
+      "Stage 2":           `${systolic}/${diastolic} mmHg is Stage 2 high. Consider speaking with your GP if this persists.${p}`,
+      "Crisis":            `${systolic}/${diastolic} mmHg is very high. Please seek medical advice today.${p}`,
+    };
+    setBanner({ ...cat, msg: msgs[cat.short] });
   };
 
-  const category = () => {
-    if (!systolic || !diastolic) return null;
-    const s = Number(systolic), d = Number(diastolic);
-    if (s < 120 && d < 80)   return { label: "Normal",         color: "#6a9e6a" };
-    if (s < 130 && d < 80)   return { label: "Elevated",       color: "#c8a830" };
-    if (s < 140 || d < 90)   return { label: "High (Stage 1)", color: "#c8955a" };
-    if (s >= 140 || d >= 90) return { label: "High (Stage 2)", color: "#c87a6a" };
-    return null;
-  };
-  const cat = category();
+  const livecat = bpCategory(systolic, diastolic);
 
   return (
     <Section title="❤️ Blood Pressure" accent="#c87a6a">
       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <input type="number" placeholder="120" value={systolic} onChange={e=>setSystolic(e.target.value)}
-            style={{ width:72, padding:"10px 8px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:18, color:"#3d2b1a", outline:"none", textAlign:"center" }} />
-          <span style={{ fontSize:10, color:"#a07850", marginTop:3 }}>Systolic</span>
-        </div>
-        <span style={{ fontSize:22, color:"#c8b898", fontWeight:300, marginBottom:14 }}>/</span>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <input type="number" placeholder="80" value={diastolic} onChange={e=>setDiastolic(e.target.value)}
-            style={{ width:72, padding:"10px 8px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:18, color:"#3d2b1a", outline:"none", textAlign:"center" }} />
-          <span style={{ fontSize:10, color:"#a07850", marginTop:3 }}>Diastolic</span>
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <input type="number" placeholder="72" value={pulse} onChange={e=>setPulse(e.target.value)}
-            style={{ width:72, padding:"10px 8px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:18, color:"#3d2b1a", outline:"none", textAlign:"center" }} />
-          <span style={{ fontSize:10, color:"#a07850", marginTop:3 }}>Pulse (opt.)</span>
-        </div>
+        {[["Systolic","120",systolic,setSystolic],["Diastolic","80",diastolic,setDiastolic],["Pulse","72",pulse,setPulse]].map(([label,ph,val,set])=>(
+          <div key={label} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+            <input type="number" placeholder={ph} value={val} onChange={e=>set(e.target.value)}
+              style={{ width:72, padding:"10px 8px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:18, color:"#3d2b1a", outline:"none", textAlign:"center" }} />
+            <span style={{ fontSize:10, color:"#a07850", marginTop:3 }}>{label}{label==="Pulse"?" (opt.)":""}</span>
+          </div>
+        ))}
         <span style={{ fontSize:11, color:"#a07850", alignSelf:"flex-end", marginBottom:18 }}>mmHg</span>
       </div>
-      {cat && (
-        <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:20, background:cat.color+"22", border:`1.5px solid ${cat.color}`, color:cat.color, fontSize:12, fontWeight:600, marginBottom:8 }}>
-          {cat.label}
+      {/* Live category pill while typing */}
+      {livecat && !banner && (
+        <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:livecat.bg, border:`1.5px solid ${livecat.border}`, marginBottom:8 }}>
+          <div style={{ width:8, height:8, borderRadius:"50%", background:livecat.dot }} />
+          <span style={{ fontSize:12, fontWeight:600, color:livecat.text }}>{livecat.label}</span>
         </div>
       )}
       <textarea placeholder="Any notes? Time of day, how you were feeling, medication taken…" value={note}
         onChange={e=>setNote(e.target.value)}
         style={{ width:"100%", minHeight:50, padding:"10px 12px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#3d2b1a", resize:"vertical", outline:"none" }} />
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+      <div style={{ marginTop:10 }}>
         <button onClick={save} disabled={!systolic||!diastolic}
           style={{ padding:"9px 20px", background:(!systolic||!diastolic)?"#d0b898":"#c87a6a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
           Save
         </button>
-        {savedFlash && <span style={{ fontSize:12, color:"#6a9e6a", fontWeight:600 }}>Saved ✓</span>}
       </div>
+      {banner && (
+        <div style={{ marginTop:10, padding:"10px 14px", background:banner.bg, border:`1.5px solid ${banner.border}`, borderRadius:10, fontSize:13, color:banner.text, lineHeight:1.6, display:"flex", alignItems:"flex-start", gap:8 }}>
+          <div style={{ width:10, height:10, borderRadius:"50%", background:banner.dot, flexShrink:0, marginTop:3 }} />
+          <span>{banner.msg}</span>
+        </div>
+      )}
+      <div style={{ marginTop:8, fontSize:11, color:"#a07850" }}>For trends and in-depth analysis, see the Insights tab → Blood Pressure.</div>
     </Section>
   );
 }
@@ -1439,6 +1448,101 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
   );
 }
 
+// ── BP Trend Section (Insights) ──────────────────────────────────────────────
+function BPTrendSection({ bpData, minBP, maxBP, allEntries }) {
+  const [insight, setInsight]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [analysed, setAnalysed] = useState(false);
+  const [error, setError]       = useState("");
+  const [copied, setCopied]     = useState(false);
+
+  const analyse = async () => {
+    setLoading(true); setError("");
+    const history = bpData.map(d => `${d.d}: ${d.sys}/${d.dia} mmHg${d.pulse ? ` pulse ${d.pulse}bpm` : ""}`).join("; ");
+    // Also gather relevant lifestyle data for correlations
+    const lifestyle = Object.entries(allEntries).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14).map(([d,e])=>{
+      const units = (e.alcohol||[]).reduce((s,a)=>s+(a.units||0),0);
+      return `${formatDate(d)}: sleep ${e.fitbit?.sleepMins ? fmtMins(e.fitbit.sleepMins) : "unknown"}, steps ${e.fitbit?.steps||"unknown"}, alcohol ${units>0?units+"u":"none"}, exercise ${e.exercise||"none"}`;
+    }).join("; ");
+    try {
+      const resp = await askClaude(
+        [{ role:"user", content:`BP readings: ${history}
+
+Lifestyle context: ${lifestyle}` }],
+        `You are a health coach analysing blood pressure trends. Using the NHS categories (Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90):
+1. Summarise the overall trend and typical category
+2. Identify any correlations with sleep, alcohol, exercise or other factors
+3. Give 2-3 specific, practical lifestyle suggestions based on the data
+Be direct and specific. British English. 4-5 sentences total.`
+      );
+      setInsight(resp); setAnalysed(true);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const copyForGP = () => {
+    const lines = ["Blood Pressure Log — Nourish App", ""];
+    bpData.forEach(d => {
+      lines.push(`${d.d}: ${d.sys}/${d.dia} mmHg${d.pulse ? `  Pulse: ${d.pulse} bpm` : ""}  [${bpCategory(d.sys,d.dia)?.short||""}]`);
+    });
+    lines.push("");
+    const avgSys = Math.round(bpData.reduce((s,d)=>s+d.sys,0)/bpData.length);
+    const avgDia = Math.round(bpData.reduce((s,d)=>s+d.dia,0)/bpData.length);
+    lines.push(`Average: ${avgSys}/${avgDia} mmHg over ${bpData.length} readings`);
+    navigator.clipboard.writeText(lines.join("
+")).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); });
+  };
+
+  const W = Math.max(bpData.length*60, 300);
+  const H = 130, pad = 10, chartH = 90;
+  const bpRange = maxBP - minBP || 40;
+  const yFor = v => pad + chartH - ((v - minBP) / bpRange) * chartH;
+  const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
+
+  return (
+    <Section title="❤️ Blood Pressure" accent="#c87a6a">
+      <ScrollRight>
+        <svg width={W} height={H}>
+          {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"#c87a6a55":"#ecdfc8"} strokeWidth={1} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"#a07850"}>{v}</text></g>; })}
+          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#c87a6a" strokeWidth={2.5} strokeLinejoin="round"/>
+          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
+          {bpData.map((d,i)=>{
+            const cat = bpCategory(d.sys, d.dia);
+            return (<g key={i}>
+              <circle cx={i*60+30} cy={yFor(d.sys)} r={5} fill={cat?.dot||"#c87a6a"}/>
+              <circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/>
+              <text x={i*60+30} y={yFor(d.sys)-7} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text>
+              <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text>
+              {d.pulse && <text x={i*60+30} y={yFor(d.dia)+24} textAnchor="middle" fontSize={7} fill="#a07850">♥{d.pulse}</text>}
+              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text>
+            </g>);
+          })}
+        </svg>
+      </ScrollRight>
+      <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12, flexWrap:"wrap" }}>
+        <span style={{color:"#c87a6a"}}>— Systolic</span>
+        <span style={{color:"#7a9ec8"}}>-- Diastolic</span>
+        <span style={{color:"#a07850"}}>♥ Pulse</span>
+        <span style={{color:"#c87a6a", fontSize:11, opacity:0.7}}>· dashed = 140/90 threshold</span>
+      </div>
+      <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
+        <button onClick={analyse} disabled={loading}
+          style={{ padding:"8px 18px", background:"linear-gradient(135deg,#c87a6a,#a05040)", color:"#fff", border:"none", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
+          {loading ? "Analysing…" : "✦ Analyse BP trend"}
+        </button>
+        <button onClick={copyForGP}
+          style={{ padding:"8px 18px", background:"none", border:"1.5px solid #c87a6a", color:"#c87a6a", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
+          {copied ? "Copied ✓" : "📋 Copy readings"}
+        </button>
+      </div>
+      {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
+      {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+      {insight && <AIBubble text={insight} />}
+      {analysed && <ChatWidget systemPrompt="You are a health coach discussing blood pressure trends and lifestyle factors. Give practical, specific advice. British English." contextSummary={`BP trend analysis: ${insight}`} placeholder="e.g. Which days look worst? What should I change first?" />}
+    </Section>
+  );
+}
+
 // ── Insights Tab ──────────────────────────────────────────────────────────────
 function InsightsTab({ entries }) {
   const [insight, setInsight] = useState("");
@@ -1560,30 +1664,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         </Section>
       ) : null;
       case 'bp': return bpData.length >= 2 ? (
-        <Section title="❤️ Blood Pressure" accent="#c87a6a">
-          <ScrollRight>
-            {(() => {
-              const W = Math.max(bpData.length*60, 300);
-              const H = 130, pad = 10, chartH = 90;
-              const bpRange = maxBP - minBP || 40;
-              const yFor = v => pad + chartH - ((v - minBP) / bpRange) * chartH;
-              const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
-              return (
-                <svg width={W} height={H}>
-                  {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"#c87a6a55":"#ecdfc8"} strokeWidth={1} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"#a07850"}>{v}</text></g>; })}
-                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#c87a6a" strokeWidth={2.5} strokeLinejoin="round"/>
-                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
-                  {bpData.map((d,i)=>(<g key={i}><circle cx={i*60+30} cy={yFor(d.sys)} r={4} fill="#c87a6a"/><circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/><text x={i*60+30} y={yFor(d.sys)-6} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text><text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text><text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text></g>))}
-                </svg>
-              );
-            })()}
-          </ScrollRight>
-          <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12 }}>
-            <span style={{color:"#c87a6a"}}>— Systolic</span>
-            <span style={{color:"#7a9ec8"}}>-- Diastolic</span>
-            <span style={{color:"#c87a6a", fontSize:11, opacity:0.7}}>· dashed = 140/90 threshold</span>
-          </div>
-        </Section>
+        <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} />
       ) : null;
       case 'ai': return (
         <Section title="✦ AI Pattern Analysis" accent="#a07850">
