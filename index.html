@@ -1180,7 +1180,8 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
         msgs.push(`⬆ Up ${diff}kg since ${formatDate(lastEntry[0])}.`);
         tone = "bad";
       } else {
-        msgs.push(`Weight saved — ${Math.abs(diff) < 0.05 ? "no change" : (diff < 0 ? `down ${Math.abs(diff)}kg` : `up ${diff}kg`)} from last entry.`);
+        const changeStr = Math.abs(diff) < 0.05 ? "no change" : (diff < 0 ? "down " + Math.abs(diff) + "kg" : "up " + diff + "kg");
+        msgs.push(`Weight saved — ${changeStr} from last entry.`);
       }
     } else {
       msgs.push("Weight saved.");
@@ -1458,7 +1459,7 @@ function BPTrendSection({ bpData, minBP, maxBP, allEntries }) {
 
   const analyse = async () => {
     setLoading(true); setError("");
-    const history = bpData.map(d => `${d.d}: ${d.sys}/${d.dia} mmHg${d.pulse ? ` pulse ${d.pulse}bpm` : ""}`).join("; ");
+    const history = bpData.map(d => d.d + ": " + d.sys + "/" + d.dia + " mmHg" + (d.pulse ? " pulse " + d.pulse + "bpm" : "")).join("; ");
     // Also gather relevant lifestyle data for correlations
     const lifestyle = Object.entries(allEntries).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14).map(([d,e])=>{
       const units = (e.alcohol||[]).reduce((s,a)=>s+(a.units||0),0);
@@ -1483,14 +1484,15 @@ Be direct and specific. British English. 4-5 sentences total.`
   const copyForGP = () => {
     const lines = ["Blood Pressure Log — Nourish App", ""];
     bpData.forEach(d => {
-      lines.push(`${d.d}: ${d.sys}/${d.dia} mmHg${d.pulse ? `  Pulse: ${d.pulse} bpm` : ""}  [${bpCategory(d.sys,d.dia)?.short||""}]`);
+      const pulseStr = d.pulse ? "  Pulse: " + d.pulse + " bpm" : "";
+      const catShort = bpCategory(d.sys, d.dia)?.short || "";
+      lines.push(`${d.d}: ${d.sys}/${d.dia} mmHg${pulseStr}  [${catShort}]`);
     });
     lines.push("");
     const avgSys = Math.round(bpData.reduce((s,d)=>s+d.sys,0)/bpData.length);
     const avgDia = Math.round(bpData.reduce((s,d)=>s+d.dia,0)/bpData.length);
     lines.push(`Average: ${avgSys}/${avgDia} mmHg over ${bpData.length} readings`);
-    navigator.clipboard.writeText(lines.join("
-")).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); });
+    navigator.clipboard.writeText(lines.join("\n")).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); });
   };
 
   const W = Math.max(bpData.length*60, 300);
