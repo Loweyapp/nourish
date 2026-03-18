@@ -42,6 +42,8 @@ const GDRIVE_TOKEN_KEY     = "nourish-gdrive-token";
 const GDRIVE_LAST_BACKUP   = "nourish-last-backup";
 const DUMMY_SEEDED_KEY     = "nourish-dummy-seeded";
 const FAVOURITES_KEY       = "nourish-favourites";
+const LOG_LAYOUT_KEY       = "nourish-log-layout";
+const INSIGHTS_LAYOUT_KEY  = "nourish-insights-layout";
 const GDRIVE_CLIENT_ID     = "841458188245-8rdmltdj4acjb0c4fisrf44vmedovuc3.apps.googleusercontent.com";
 const GDRIVE_SCOPE         = "https://www.googleapis.com/auth/drive.file";
 const BACKUP_INTERVAL_DAYS = 7;
@@ -1247,18 +1249,124 @@ function BPSection({ entry, onUpdate }) {
   );
 }
 
-// ── Log Tab ───────────────────────────────────────────────────────────────────
-function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected }) {
-  const dayContext = buildDayContext(entry);
-  const updateFitbit = (fitbit) => onChange({ ...entry, fitbit });
+// ── Draggable Layout ──────────────────────────────────────────────────────────
+function DraggableLayout({ storageKey, defaultOrder, editMode, renderSection }) {
+  const [order, setOrder] = useState(() => {
+    const saved = ls.get(storageKey);
+    // Only use saved if it contains exactly the same ids
+    if (saved && Array.isArray(saved) && saved.length === defaultOrder.length &&
+        defaultOrder.every(id => saved.includes(id))) return saved;
+    return defaultOrder;
+  });
+  const [dragIdx, setDragIdx]   = useState(null);
+  const [overIdx, setOverIdx]   = useState(null);
+  const itemRefs = useRef({});   // keyed by id
+
+  const onDragStart = (e, idx) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragIdx(idx);
+    setOverIdx(idx);
+  };
+
+  const onDragMove = (e, idx) => {
+    if (dragIdx === null || dragIdx !== idx) return;
+    const y = e.clientY;
+    let newOver = idx;
+    order.forEach((id, i) => {
+      const el = itemRefs.current[id];
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) newOver = i;
+    });
+    if (newOver !== overIdx) setOverIdx(newOver);
+  };
+
+  const onDragEnd = (idx) => {
+    if (dragIdx !== null && overIdx !== null && dragIdx !== overIdx) {
+      const newOrder = [...order];
+      const [moved] = newOrder.splice(dragIdx, 1);
+      newOrder.splice(overIdx, 0, moved);
+      setOrder(newOrder);
+      ls.set(storageKey, newOrder);
+    }
+    setDragIdx(null);
+    setOverIdx(null);
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-      <FoodSection foodItems={entry.food||[]} onUpdate={(food)=>onChange({...entry,food})} alcoholItems={entry.alcohol||[]} onAlcoholUpdate={(alcohol)=>onChange({...entry,alcohol})} dayContext={dayContext} fitbitData={entry.fitbit} />
-      <FitbitSection fitbitData={entry.fitbit} onUpdate={updateFitbit} connected={fitbitConnected} />
-      <MoodSection entry={{ mood:entry.mood, energy:entry.energy, moodNote:entry.moodNote, moodFeedback:entry.moodFeedback }} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />
-      <ExerciseSection entry={{ exercise:entry.exercise, exerciseFeedback:entry.exerciseFeedback }} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />
-      <WeightSection entry={{ weight:entry.weight, weightFeedback:entry.weightFeedback }} allEntries={allEntries} currentDay={currentDay} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />
-      <BPSection entry={entry} onUpdate={(d)=>onChange({...entry,...d})} />
+      {order.map((id, idx) => {
+        const isDragging = dragIdx === idx;
+        const isTarget   = overIdx === idx && dragIdx !== null && dragIdx !== idx;
+        return (
+          <div key={id} ref={el => { itemRefs.current[id] = el; }}
+            style={{
+              opacity:   isDragging ? 0.5 : 1,
+              transform: isTarget ? (dragIdx < idx ? "translateY(6px)" : "translateY(-6px)") : "none",
+              transition: dragIdx === null ? "transform 0.18s" : "none",
+              position:  "relative",
+            }}>
+            {/* Drag handle — only visible in edit mode */}
+            {editMode && (
+              <div
+                onPointerDown={e => onDragStart(e, idx)}
+                onPointerMove={e => onDragMove(e, idx)}
+                onPointerUp={()  => onDragEnd(idx)}
+                onPointerCancel={()=> { setDragIdx(null); setOverIdx(null); }}
+                style={{
+                  position:"absolute", top:10, right:10, zIndex:20,
+                  width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center",
+                  background:"#c8955a", borderRadius:8, color:"#fff", fontSize:17, lineHeight:1,
+                  cursor:"grab", touchAction:"none", userSelect:"none", boxShadow:"0 2px 6px #c8955a55"
+                }}>☰</div>
+            )}
+            {renderSection(id)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Log Tab ───────────────────────────────────────────────────────────────────
+function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected }) {
+  const [editLayout, setEditLayout] = useState(false);
+  const dayContext   = buildDayContext(entry);
+  const updateFitbit = (fitbit) => onChange({ ...entry, fitbit });
+
+  const LOG_DEFAULT = ['food','fitbit','mood','exercise','weight','bp'];
+
+  const renderSection = (id) => {
+    switch(id) {
+      case 'food':     return <FoodSection foodItems={entry.food||[]} onUpdate={(food)=>onChange({...entry,food})} alcoholItems={entry.alcohol||[]} onAlcoholUpdate={(alcohol)=>onChange({...entry,alcohol})} dayContext={dayContext} fitbitData={entry.fitbit} />;
+      case 'fitbit':   return <FitbitSection fitbitData={entry.fitbit} onUpdate={updateFitbit} connected={fitbitConnected} />;
+      case 'mood':     return <MoodSection entry={{ mood:entry.mood, energy:entry.energy, moodNote:entry.moodNote, moodFeedback:entry.moodFeedback }} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />;
+      case 'exercise': return <ExerciseSection entry={{ exercise:entry.exercise, exerciseFeedback:entry.exerciseFeedback }} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />;
+      case 'weight':   return <WeightSection entry={{ weight:entry.weight, weightFeedback:entry.weightFeedback }} allEntries={allEntries} currentDay={currentDay} onUpdate={(d)=>onChange({...entry,...d})} dayContext={dayContext} />;
+      case 'bp':       return <BPSection entry={entry} onUpdate={(d)=>onChange({...entry,...d})} />;
+      default:         return null;
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:editLayout?12:0 }}>
+        <button onClick={()=>setEditLayout(v=>!v)}
+          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #e0ccb4", color:editLayout?"#fff":"#a07850", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom: editLayout?0:12 }}>
+          {editLayout ? "✓ Done" : "✎ Edit layout"}
+        </button>
+      </div>
+      {editLayout && (
+        <div style={{ fontSize:12, color:"#a07850", marginBottom:12, textAlign:"center" }}>
+          Drag the ☰ handle to reorder sections
+        </div>
+      )}
+      <DraggableLayout
+        storageKey={LOG_LAYOUT_KEY}
+        defaultOrder={LOG_DEFAULT}
+        editMode={editLayout}
+        renderSection={renderSection}
+      />
     </div>
   );
 }
@@ -1269,6 +1377,7 @@ function InsightsTab({ entries }) {
   const [loading, setLoading] = useState(false);
   const [analysed, setAnalysed] = useState(false);
   const [error, setError] = useState("");
+  const [editLayout, setEditLayout] = useState(false);
 
   const days = Object.entries(entries).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
   const moodData   = [...days].reverse().map(([d,e])=>({ d:formatDate(d), mood:e.mood||0, energy:e.energy||0 }));
@@ -1320,21 +1429,24 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
 
   if (days.length < 2) return <div style={{ textAlign:"center", padding:40, color:"#a07850", fontSize:15 }}>Log at least 2 days to unlock insights ✦</div>;
 
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-      <Section title="📈 Mood & Energy" accent="#7a9ec8">
-        <div style={{ overflowX:"auto" }}>
-          <svg width={Math.max(moodData.length*50,300)} height={120}>
-            {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={moodData.length*50} y1={110-(v-1)*20} y2={110-(v-1)*20} stroke="#ecdfc8" strokeWidth={1}/>)}
-            <polyline points={moodData.map((d,i)=>`${i*50+25},${110-(d.mood-1)*20}`).join(" ")} fill="none" stroke="#c8955a" strokeWidth={2.5} strokeLinejoin="round"/>
-            <polyline points={moodData.map((d,i)=>`${i*50+25},${110-(d.energy-1)*20}`).join(" ")} fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
-            {moodData.map((d,i)=><g key={i}><circle cx={i*50+25} cy={110-(d.mood-1)*20} r={4} fill="#c8955a"/><circle cx={i*50+25} cy={110-(d.energy-1)*20} r={4} fill="#7a9ec8"/><text x={i*50+25} y={118} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text></g>)}
-          </svg>
-        </div>
-        <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12 }}><span style={{color:"#c8955a"}}>— Mood</span><span style={{color:"#7a9ec8"}}>-- Energy</span></div>
-      </Section>
+  const INSIGHTS_DEFAULT = ['mood_energy','calories','steps','weight','alcohol','bp','ai'];
 
-      {calData.some(d=>d.cals>0) && (
+  const renderSection = (id) => {
+    switch(id) {
+      case 'mood_energy': return (
+        <Section title="📈 Mood & Energy" accent="#7a9ec8">
+          <div style={{ overflowX:"auto" }}>
+            <svg width={Math.max(moodData.length*50,300)} height={120}>
+              {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={moodData.length*50} y1={110-(v-1)*20} y2={110-(v-1)*20} stroke="#ecdfc8" strokeWidth={1}/>)}
+              <polyline points={moodData.map((d,i)=>`${i*50+25},${110-(d.mood-1)*20}`).join(" ")} fill="none" stroke="#c8955a" strokeWidth={2.5} strokeLinejoin="round"/>
+              <polyline points={moodData.map((d,i)=>`${i*50+25},${110-(d.energy-1)*20}`).join(" ")} fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
+              {moodData.map((d,i)=><g key={i}><circle cx={i*50+25} cy={110-(d.mood-1)*20} r={4} fill="#c8955a"/><circle cx={i*50+25} cy={110-(d.energy-1)*20} r={4} fill="#7a9ec8"/><text x={i*50+25} y={118} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text></g>)}
+            </svg>
+          </div>
+          <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12 }}><span style={{color:"#c8955a"}}>— Mood</span><span style={{color:"#7a9ec8"}}>-- Energy</span></div>
+        </Section>
+      );
+      case 'calories': return calData.some(d=>d.cals>0) ? (
         <Section title="🔥 Daily Calories" accent="#c8955a">
           <div style={{ overflowX:"auto" }}>
             <svg width={Math.max(calData.length*50,300)} height={120}>
@@ -1342,9 +1454,8 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             </svg>
           </div>
         </Section>
-      )}
-
-      {stepsData.length >= 2 && (
+      ) : null;
+      case 'steps': return stepsData.length >= 2 ? (
         <Section title="👟 Daily Steps" accent="#6a7ec8">
           <div style={{ overflowX:"auto" }}>
             <svg width={Math.max(stepsData.length*50,300)} height={120}>
@@ -1354,9 +1465,8 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
           </div>
           <div style={{ fontSize:11, color:"#a07850", marginTop:4 }}>Dashed line = 10,000 step goal · Green = goal reached</div>
         </Section>
-      )}
-
-      {weightData.length >= 2 && (
+      ) : null;
+      case 'weight': return weightData.length >= 2 ? (
         <Section title="⚖️ Weight Trend" accent="#a07850">
           <div style={{ overflowX:"auto" }}>
             <svg width={Math.max(weightData.length*50,300)} height={120}>
@@ -1365,18 +1475,15 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             </svg>
           </div>
         </Section>
-      )}
-
-      {alcData.some(d=>d.u>0) && (
+      ) : null;
+      case 'alcohol': return alcData.some(d=>d.u>0) ? (
         <Section title="🍺 Alcohol (units)" accent="#a07850">
           <div style={{ overflowX:"auto" }}>
             <svg width={Math.max(alcData.length*50,300)} height={120}>
-              {/* guideline: 14 units/week = 2 per day dashed line */}
               {(() => { const gy = 90-(2/maxAlc)*80; return <line x1={0} x2={alcData.length*50} y1={gy} y2={gy} stroke="#c87a6a55" strokeWidth={1} strokeDasharray="3 2"/>; })()}
               {alcData.map((d,i)=>{ const h=(d.u/maxAlc)*80; return (
                 <g key={i}>
-                  <rect x={i*50+12} y={90-h} width={26} height={h||0} rx={4}
-                    fill={d.u>6?"#c87a6a":d.u>2?"#e0a060":"#6a9e6a"} opacity={0.85}/>
+                  <rect x={i*50+12} y={90-h} width={26} height={h||0} rx={4} fill={d.u>6?"#c87a6a":d.u>2?"#e0a060":"#6a9e6a"} opacity={0.85}/>
                   {d.u>0 && <text x={i*50+25} y={Math.max(88-h,12)} textAnchor="middle" fontSize={9} fill="#5a3e28">{d.u}</text>}
                   <text x={i*50+25} y={108} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text>
                 </g>
@@ -1390,46 +1497,22 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             <span style={{color:"#c87a6a", opacity:0.6}}>-- 2u/day guideline</span>
           </div>
         </Section>
-      )}
-
-      {bpData.length >= 2 && (
+      ) : null;
+      case 'bp': return bpData.length >= 2 ? (
         <Section title="❤️ Blood Pressure" accent="#c87a6a">
           <div style={{ overflowX:"auto" }}>
             {(() => {
               const W = Math.max(bpData.length*60, 300);
-              const H = 130;
-              const pad = 10;
-              const chartH = 90;
+              const H = 130, pad = 10, chartH = 90;
               const bpRange = maxBP - minBP || 40;
               const yFor = v => pad + chartH - ((v - minBP) / bpRange) * chartH;
-              // grid lines at 90, 120, 140
               const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
               return (
                 <svg width={W} height={H}>
-                  {gridLines.map(v => {
-                    const y = yFor(v);
-                    const isThresh = v===140||v===90;
-                    return <g key={v}>
-                      <line x1={0} x2={W} y1={y} y2={y} stroke={isThresh?"#c87a6a55":"#ecdfc8"} strokeWidth={1} strokeDasharray={isThresh?"4 2":""}/>
-                      <text x={2} y={y-2} fontSize={8} fill={isThresh?"#c87a6a":"#a07850"}>{v}</text>
-                    </g>;
-                  })}
-                  {/* Systolic line */}
-                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")}
-                    fill="none" stroke="#c87a6a" strokeWidth={2.5} strokeLinejoin="round"/>
-                  {/* Diastolic line */}
-                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")}
-                    fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
-                  {/* Dots + labels */}
-                  {bpData.map((d,i)=>(
-                    <g key={i}>
-                      <circle cx={i*60+30} cy={yFor(d.sys)} r={4} fill="#c87a6a"/>
-                      <circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/>
-                      <text x={i*60+30} y={yFor(d.sys)-6} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text>
-                      <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text>
-                      <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text>
-                    </g>
-                  ))}
+                  {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"#c87a6a55":"#ecdfc8"} strokeWidth={1} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"#a07850"}>{v}</text></g>; })}
+                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#c87a6a" strokeWidth={2.5} strokeLinejoin="round"/>
+                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
+                  {bpData.map((d,i)=>(<g key={i}><circle cx={i*60+30} cy={yFor(d.sys)} r={4} fill="#c87a6a"/><circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/><text x={i*60+30} y={yFor(d.sys)-6} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text><text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text><text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text></g>))}
                 </svg>
               );
             })()}
@@ -1440,18 +1523,42 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             <span style={{color:"#c87a6a", fontSize:11, opacity:0.7}}>· dashed = 140/90 threshold</span>
           </div>
         </Section>
-      )}
+      ) : null;
+      case 'ai': return (
+        <Section title="✦ AI Pattern Analysis" accent="#a07850">
+          <button onClick={getInsights} disabled={loading}
+            style={{ padding:"10px 22px", background:"linear-gradient(135deg,#c8955a,#a07850)", color:"#fff", border:"none", borderRadius:12, fontSize:15, fontFamily:"inherit", fontWeight:700 }}>
+            {loading ? "Analysing…" : "Analyse my patterns"}
+          </button>
+          {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
+          {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+          {insight && <AIBubble text={insight} />}
+          {analysed && <ChatWidget systemPrompt="You are a health coach who has analysed multi-day food, mood, energy, exercise, weight, and Fitbit data. Answer follow-up questions and give actionable advice. British English." contextSummary={`Pattern analysis: ${insight}`} placeholder="e.g. What should I focus on first? Why does my energy dip mid-week?" />}
+        </Section>
+      );
+      default: return null;
+    }
+  };
 
-      <Section title="✦ AI Pattern Analysis" accent="#a07850">
-        <button onClick={getInsights} disabled={loading}
-          style={{ padding:"10px 22px", background:"linear-gradient(135deg,#c8955a,#a07850)", color:"#fff", border:"none", borderRadius:12, fontSize:15, fontFamily:"inherit", fontWeight:700 }}>
-          {loading ? "Analysing…" : "Analyse my patterns"}
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:editLayout?12:0 }}>
+        <button onClick={()=>setEditLayout(v=>!v)}
+          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #e0ccb4", color:editLayout?"#fff":"#a07850", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom:editLayout?0:12 }}>
+          {editLayout ? "✓ Done" : "✎ Edit layout"}
         </button>
-        {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
-        {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
-        {insight && <AIBubble text={insight} />}
-        {analysed && <ChatWidget systemPrompt="You are a health coach who has analysed multi-day food, mood, energy, exercise, weight, and Fitbit data. Answer follow-up questions and give actionable advice. British English." contextSummary={`Pattern analysis: ${insight}`} placeholder="e.g. What should I focus on first? Why does my energy dip mid-week?" />}
-      </Section>
+      </div>
+      {editLayout && (
+        <div style={{ fontSize:12, color:"#a07850", marginBottom:12, textAlign:"center" }}>
+          Drag the ☰ handle to reorder sections
+        </div>
+      )}
+      <DraggableLayout
+        storageKey={INSIGHTS_LAYOUT_KEY}
+        defaultOrder={INSIGHTS_DEFAULT}
+        editMode={editLayout}
+        renderSection={renderSection}
+      />
     </div>
   );
 }
