@@ -108,384 +108,74 @@ function saveFitbitToken(t) { ls.set(FB_TOKEN_KEY, t); }
 function clearFitbitToken() { ls.del(FB_TOKEN_KEY); ls.del(FB_FETCH_KEY); }
 
 // ── Google Drive ──────────────────────────────────────────────────────────────
-function getGDriveToken() { return ls.get(GDRIVE_TOKEN_KEY); }
+function getGDriveToken()   { return ls.get(GDRIVE_TOKEN_KEY); }
 function saveGDriveToken(t) { ls.set(GDRIVE_TOKEN_KEY, t); }
 function clearGDriveToken() { ls.del(GDRIVE_TOKEN_KEY); }
-
-function gdriveAuthUrl() {
-  const p = new URLSearchParams({
-    client_id: GDRIVE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: "token",
-    scope: GDRIVE_SCOPE,
-    state: "gdrive",
-    prompt: "consent"
-  });
-  return "https://accounts.google.com/o/oauth2/v2/auth?" + p;
-}
-
-async function getOrRefreshGDriveToken() {
-  const stored = getGDriveToken();
-  if (!stored) return null;
-  if (stored.expires_at && Date.now() < stored.expires_at - 60000) return stored.access_token;
-  // Implicit tokens can't be refreshed — need to re-auth
-  clearGDriveToken();
-  return null;
-}
-
-async function gdriveRequest(method, path, body, token) {
-  const res = await fetch("https://www.googleapis.com" + path, {
-    method,
-    headers: {
-      Authorization: "Bearer " + token,
-      ...(body ? { "Content-Type": "application/json" } : {})
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err.error?.message || "Google Drive error " + res.status);
-  }
-  return res.status === 204 ? null : res.json();
-}
-
-async function backupToDrive(entries) {
-  const token = await getOrRefreshGDriveToken();
-  if (!token) throw new Error("Not connected to Google Drive");
-
-  const filename = `nourish-backup-${today()}.json`;
-  const data = JSON.stringify({ exportedAt: new Date().toISOString(), entries }, null, 2);
-
-  // Find or create the Nourish Backups folder
-  const folderSearch = await gdriveRequest("GET",
-    `/drive/v3/files?q=name='Nourish Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
-    null, token
-  );
-  let folderId;
-  if (folderSearch.files?.length) {
-    folderId = folderSearch.files[0].id;
-  } else {
-    const folder = await gdriveRequest("POST", "/drive/v3/files", {
-      name: "Nourish Backups",
-      mimeType: "application/vnd.google-apps.folder"
-    }, token);
-    folderId = folder.id;
-  }
-
-  // Check if today's backup already exists
-  const existing = await gdriveRequest("GET",
-    `/drive/v3/files?q=name='${filename}' and '${folderId}' in parents and trashed=false&fields=files(id)`,
-    null, token
-  );
-
-  if (existing.files?.length) {
-    // Update existing file
-    const fileId = existing.files[0].id;
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-      method: "PATCH",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-      body: data
-    });
-    if (!res.ok) throw new Error("Failed to update backup");
-  } else {
-    // Create new file
-    const meta = JSON.stringify({ name: filename, parents: [folderId] });
-    const form = new FormData();
-    form.append("metadata", new Blob([meta], { type: "application/json" }));
-    form.append("file", new Blob([data], { type: "application/json" }));
-    const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-      body: form
-    });
-    if (!res.ok) throw new Error("Failed to create backup");
-  }
-
-  ls.setStr(GDRIVE_LAST_BACKUP_KEY, new Date().toISOString());
-}
-
-function shouldAutoBackup() {
-  const last = ls.str(GDRIVE_LAST_BACKUP_KEY);
-  if (!last) return true;
-  const daysSince = (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24);
-  return daysSince >= 7;
-}
-
-// ── Google Drive ─────────────────────────────────────────────────────────────
-function getGDriveToken() { return ls.get(GDRIVE_TOKEN_KEY); }
-function saveGDriveToken(t) { ls.set(GDRIVE_TOKEN_KEY, t); }
-function clearGDriveToken() { ls.del(GDRIVE_TOKEN_KEY); }
-
-async function getGDriveAccessToken() {
-  const stored = getGDriveToken();
-  if (!stored) return null;
-  // Tokens from implicit flow expire in 1 hour
-  if (stored.expires_at && Date.now() > stored.expires_at - 60000) {
-    clearGDriveToken(); return null;
-  }
-  return stored.access_token;
-}
-
-function startGDriveAuth() {
-  const params = new URLSearchParams({
-    client_id: GDRIVE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: "token",
-    scope: GDRIVE_SCOPES,
-    state: "gdrive_auth",
-  });
-  window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params;
-}
-
-async function gdriveRequest(method, path, body, token) {
-  const res = await fetch("https://www.googleapis.com/drive/v3" + path, {
-    method,
-    headers: {
-      Authorization: "Bearer " + token,
-      ...(body ? { "Content-Type": "application/json" } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
-  });
-  if (!res.ok) {
-    if (res.status === 401) { clearGDriveToken(); throw new Error("Google Drive session expired — please reconnect"); }
-    throw new Error("Drive error " + res.status);
-  }
-  return res.status === 204 ? null : res.json();
-}
-
-async function findOrCreateFolder(token) {
-  // Search for existing Nourish Backups folder
-  const search = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("name='Nourish Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false")}&fields=files(id,name)`,
-    { headers: { Authorization: "Bearer " + token } }
-  );
-  const data = await search.json();
-  if (data.files?.length) return data.files[0].id;
-  // Create it
-  const created = await gdriveRequest("POST", "/files", {
-    name: "Nourish Backups",
-    mimeType: "application/vnd.google-apps.folder"
-  }, token);
-  return created.id;
-}
-
-async function backupToDrive(entries) {
-  const token = await getGDriveAccessToken();
-  if (!token) throw new Error("Not connected to Google Drive");
-  const folderId = await findOrCreateFolder(token);
-  const dateStr = new Date().toISOString().split("T")[0];
-  const filename = `nourish-backup-${dateStr}.json`;
-  const content = JSON.stringify({ exportedAt: new Date().toISOString(), entries }, null, 2);
-
-  // Use multipart upload
-  const boundary = "nourish_boundary";
-  const body = [
-    `--${boundary}`,
-    `Content-Type: application/json`,
-    ``,
-    JSON.stringify({ name: filename, parents: [folderId] }),
-    `--${boundary}`,
-    `Content-Type: application/json`,
-    ``,
-    content,
-    `--${boundary}--`
-  ].join("\r\n");
-
-  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": `multipart/related; boundary=${boundary}`
-    },
-    body
-  });
-  if (!res.ok) throw new Error("Upload failed: " + res.status);
-  ls.setStr(GDRIVE_LAST_BACKUP, new Date().toISOString());
-  return filename;
-}
-
-function shouldAutoBackup() {
-  const last = ls.str(GDRIVE_LAST_BACKUP);
-  if (!last) return true;
-  const daysSince = (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24);
-  return daysSince >= 7;
-}
-
-// ── Google Drive ──────────────────────────────────────────────────────────────
-function getGDriveToken() { return ls.get(GDRIVE_TOKEN_KEY); }
-function saveGDriveToken(t) { ls.set(GDRIVE_TOKEN_KEY, t); }
-function clearGDriveToken() { ls.del(GDRIVE_TOKEN_KEY); }
-
-function gdriveAuthUrl() {
-  const p = new URLSearchParams({
-    client_id: GDRIVE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: "token",
-    scope: GDRIVE_SCOPE,
-    include_granted_scopes: "true",
-    state: "gdrive_auth"
-  });
-  return "https://accounts.google.com/o/oauth2/v2/auth?" + p;
-}
-
-async function gdriveRequest(method, url, body, token) {
-  const res = await fetch(url, {
-    method,
-    headers: {
-      Authorization: "Bearer " + token,
-      ...(body ? { "Content-Type": "application/json" } : {})
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (res.status === 401) { clearGDriveToken(); throw new Error("Google session expired — please reconnect"); }
-  return res;
-}
-
-async function findOrCreateFolder(token) {
-  // Search for existing Nourish Backups folder
-  const search = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name%3D'Nourish+Backups'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse&fields=files(id,name)`,
-    { headers: { Authorization: "Bearer " + token } }
-  );
-  const data = await search.json();
-  if (data.files?.length) return data.files[0].id;
-  // Create it
-  const create = await gdriveRequest("POST", "https://www.googleapis.com/drive/v3/files", {
-    name: "Nourish Backups",
-    mimeType: "application/vnd.google-apps.folder"
-  }, token);
-  const folder = await create.json();
-  return folder.id;
-}
-
-async function backupToDrive(entries) {
-  const stored = getGDriveToken();
-  if (!stored?.access_token) throw new Error("Not connected to Google Drive");
-  const token = stored.access_token;
-
-  const folderId = await findOrCreateFolder(token);
-  const date = new Date().toISOString().split("T")[0];
-  const filename = `nourish-backup-${date}.json`;
-  const content = JSON.stringify({ exportedAt: new Date().toISOString(), entries }, null, 2);
-
-  // Multipart upload
-  const boundary = "nourish_boundary";
-  const body = [
-    `--${boundary}`,
-    `Content-Type: application/json`,
-    ``,
-    JSON.stringify({ name: filename, parents: [folderId] }),
-    `--${boundary}`,
-    `Content-Type: application/json`,
-    ``,
-    content,
-    `--${boundary}--`
-  ].join("\r\n");
-
-  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": `multipart/related; boundary=${boundary}`
-    },
-    body
-  });
-  if (res.status === 401) { clearGDriveToken(); throw new Error("Google session expired"); }
-  if (!res.ok) throw new Error(`Backup failed: HTTP ${res.status}`);
-  ls.setStr(GDRIVE_LAST_BACKUP, new Date().toISOString());
-  return filename;
-}
-
-function shouldAutoBackup() {
-  const last = ls.str(GDRIVE_LAST_BACKUP);
-  if (!last) return true;
-  const daysSince = (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24);
-  return daysSince >= BACKUP_INTERVAL_DAYS;
-}
-
-// ── Google Drive ─────────────────────────────────────────────────────────────
-function getGDriveToken() { return ls.get(GDRIVE_TOKEN_KEY); }
-function saveGDriveToken(t) { ls.set(GDRIVE_TOKEN_KEY, t); }
-function clearGDriveToken() { ls.del(GDRIVE_TOKEN_KEY); }
-function getLastBackup() { return ls.str(GDRIVE_LAST_BACKUP_KEY); }
-function setLastBackup(d) { ls.setStr(GDRIVE_LAST_BACKUP_KEY, d); }
+function getLastBackup()    { return ls.str(GDRIVE_LAST_BACKUP); }
 
 function isGDriveConnected() {
   const t = getGDriveToken();
   if (!t) return false;
-  if (t.expires_at && Date.now() > t.expires_at) { clearGDriveToken(); return false; }
+  if (t.expires_at && Date.now() > t.expires_at - 60000) { clearGDriveToken(); return false; }
   return true;
 }
 
 function startGDriveAuth() {
   const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
+    client_id:     GDRIVE_CLIENT_ID,
+    redirect_uri:  REDIRECT_URI,
     response_type: "token",
-    scope: GDRIVE_SCOPE,
-    state: "gdrive_auth",
+    scope:         GDRIVE_SCOPE,
+    state:         "gdrive_auth",
+    prompt:        "consent",
   });
   window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params;
 }
 
-async function gDriveRequest(path, method, body, token) {
-  const res = await fetch("https://www.googleapis.com/drive/v3" + path, {
-    method: method || "GET",
-    headers: {
-      Authorization: "Bearer " + token,
-      ...(body ? { "Content-Type": "application/json" } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
+async function findOrCreateFolder(token) {
+  const q = encodeURIComponent("name='Nourish Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const search = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+    headers: { Authorization: "Bearer " + token }
   });
-  if (!res.ok) {
-    if (res.status === 401) clearGDriveToken();
-    throw new Error("Google Drive error: " + res.status);
-  }
-  return res.json();
+  if (search.status === 401) { clearGDriveToken(); throw new Error("Google session expired — please reconnect"); }
+  const data = await search.json();
+  if (data.files?.length) return data.files[0].id;
+  const create = await fetch("https://www.googleapis.com/drive/v3/files", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Nourish Backups", mimeType: "application/vnd.google-apps.folder" })
+  });
+  if (!create.ok) throw new Error("Could not create Nourish Backups folder: " + create.status);
+  const folder = await create.json();
+  return folder.id;
 }
 
 async function backupToDrive(entries) {
   const tokenData = getGDriveToken();
   if (!tokenData?.access_token) throw new Error("Not connected to Google Drive");
-  const token = tokenData.access_token;
-
-  // Find or create "Nourish Backups" folder
-  const folderSearch = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='Nourish Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
-    { headers: { Authorization: "Bearer " + token } }
-  );
-  const folderData = await folderSearch.json();
-  let folderId;
-  if (folderData.files?.length) {
-    folderId = folderData.files[0].id;
-  } else {
-    // Create the folder
-    const createFolder = await fetch("https://www.googleapis.com/drive/v3/files", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Nourish Backups", mimeType: "application/vnd.google-apps.folder" })
-    });
-    const folderResult = await createFolder.json();
-    folderId = folderResult.id;
+  if (tokenData.expires_at && Date.now() > tokenData.expires_at - 60000) {
+    clearGDriveToken();
+    throw new Error("Google session expired — please reconnect in Settings");
   }
-
-  // Upload backup file using multipart upload
-  const date = new Date().toISOString().split("T")[0];
+  const token    = tokenData.access_token;
+  const folderId = await findOrCreateFolder(token);
+  const date     = new Date().toISOString().split("T")[0];
   const filename = `nourish-backup-${date}.json`;
-  const fileContent = JSON.stringify({ exportedAt: new Date().toISOString(), entries }, null, 2);
-  const boundary = "nourish_boundary_xyz";
-  const metadata = JSON.stringify({ name: filename, parents: [folderId] });
-  const body = `--${boundary}
-Content-Type: application/json
+  const content  = JSON.stringify({ exportedAt: new Date().toISOString(), entries }, null, 2);
 
-${metadata}
---${boundary}
-Content-Type: application/json
+  // Multipart upload so we can set metadata (name + parent) in one request
+  const boundary = "nourish_bnd_" + Math.random().toString(36).slice(2);
+  const body = [
+    `--${boundary}\r\n`,
+    `Content-Type: application/json\r\n\r\n`,
+    JSON.stringify({ name: filename, parents: [folderId] }) + "\r\n",
+    `--${boundary}\r\n`,
+    `Content-Type: application/json\r\n\r\n`,
+    content + "\r\n",
+    `--${boundary}--`
+  ].join("");
 
-${fileContent}
---${boundary}--`;
-
-  const upload = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token,
@@ -493,17 +183,19 @@ ${fileContent}
     },
     body
   });
-  if (!upload.ok) throw new Error("Upload failed: " + upload.status);
-  setLastBackup(new Date().toISOString());
+  if (res.status === 401) { clearGDriveToken(); throw new Error("Google session expired — please reconnect"); }
+  if (!res.ok) throw new Error(`Backup failed (HTTP ${res.status})`);
+  ls.setStr(GDRIVE_LAST_BACKUP, new Date().toISOString());
   return filename;
 }
 
-function shouldBackup() {
+function shouldAutoBackup() {
   const last = getLastBackup();
   if (!last) return true;
   const daysSince = (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24);
-  return daysSince >= 7;
+  return daysSince >= BACKUP_INTERVAL_DAYS;
 }
+
 
 // ── Claude ────────────────────────────────────────────────────────────────────
 async function askClaude(messages, systemPrompt) {
@@ -1889,11 +1581,11 @@ function App() {
     }
   }, []);
 
-  // Auto-backup to Drive weekly if connected
+  // Auto-backup to Google Drive weekly if connected
   useEffect(() => {
-    if (!getGDriveToken()) return;
+    if (!isGDriveConnected()) return;
     if (!shouldAutoBackup()) return;
-    backupToDrive(entries).catch(()=>{});
+    backupToDrive(loadEntries()).catch(()=>{});
   }, []);
 
   // Auto-sync Fitbit on open if connected and not yet fetched today
@@ -1910,14 +1602,6 @@ function App() {
       });
       ls.setStr(FB_FETCH_KEY, td);
     }).catch(()=>{});
-  }, []);
-
-  // Auto-backup to Google Drive weekly
-  useEffect(() => {
-    if (!isGDriveConnected()) return;
-    if (!shouldBackup()) return;
-    const currentEntries = loadEntries();
-    backupToDrive(currentEntries).catch(()=>{});
   }, []);
 
   const updateEntry = (data) => {
