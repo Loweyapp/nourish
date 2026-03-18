@@ -41,6 +41,7 @@ const SESSION_USAGE_KEY    = "nourish-session-usage";
 const GDRIVE_TOKEN_KEY     = "nourish-gdrive-token";
 const GDRIVE_LAST_BACKUP   = "nourish-last-backup";
 const DUMMY_SEEDED_KEY     = "nourish-dummy-seeded";
+const FAVOURITES_KEY       = "nourish-favourites";
 const GDRIVE_CLIENT_ID     = "841458188245-8rdmltdj4acjb0c4fisrf44vmedovuc3.apps.googleusercontent.com";
 const GDRIVE_SCOPE         = "https://www.googleapis.com/auth/drive.file";
 const BACKUP_INTERVAL_DAYS = 7;
@@ -107,6 +108,18 @@ function estimateCost() {
 }
 function saveFitbitToken(t) { ls.set(FB_TOKEN_KEY, t); }
 function clearFitbitToken() { ls.del(FB_TOKEN_KEY); ls.del(FB_FETCH_KEY); }
+
+// ── Favourites ────────────────────────────────────────────────────────────────
+function getFavourites()     { return ls.get(FAVOURITES_KEY, []); }
+function saveFavourites(f)   { ls.set(FAVOURITES_KEY, f); }
+function addFavourite(fav)   {
+  const favs = getFavourites();
+  if (favs.find(f => f.text.toLowerCase() === fav.text.toLowerCase())) return; // no dupes
+  saveFavourites([...favs, fav]);
+}
+function removeFavourite(text) {
+  saveFavourites(getFavourites().filter(f => f.text !== text));
+}
 
 // ── Google Drive ──────────────────────────────────────────────────────────────
 function getGDriveToken()   { return ls.get(GDRIVE_TOKEN_KEY); }
@@ -583,6 +596,9 @@ function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayCo
   const [pendingTime, setPendingTime] = useState("");
   const [previewSrc, setPreviewSrc] = useState(null);
   const [error, setError] = useState("");
+  const [showFavs, setShowFavs] = useState(false);
+  const [favourites, setFavourites] = useState(()=>getFavourites());
+  const textareaRef = useRef(null);
 
   const resizeImage = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -677,6 +693,66 @@ Be realistic. UK measurements and British English.`
     setLoading(false);
   };
 
+  // Auto-submit a favourite — runs it straight through analyse then adds
+  const tapFavourite = async (fav) => {
+    setShowFavs(false);
+    setText(fav.text);
+    setLoading(true); setPending(null); setPendingDrink(null); setError("");
+    const nowHour = new Date().getHours();
+    const nowTime = `${String(nowHour).padStart(2,"0")}:00`;
+    setPendingTime(nowTime);
+    try {
+      const resp = await askClaude(
+        [{ role:"user", content:`User entry: "${fav.text}"` }],
+        `You are a nutrition and drinks expert. The user may enter a single item or multiple meals at once, e.g. "Lunch 2 eggs and salad. Dinner steak and broccoli."
+
+Return ONLY valid JSON, no markdown.
+
+If SINGLE food or drink:
+{"multi":false,"type":"food"|"alcohol"|"both","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>,"commentary":"<2-3 sentences>"}
+
+If MULTIPLE meals/items:
+{"multi":true,"items":[{"text":"<description>","type":"food"|"alcohol"|"both","suggested_time":"<HH:00 best guess e.g. 08:00 for breakfast, 13:00 for lunch, 19:00 for dinner>","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>}],"commentary":"<2-3 sentence overall summary>"}
+
+User's day so far: ${dayContext}
+Be realistic. UK measurements and British English.`
+      );
+      const parsed = JSON.parse(resp.replace(/\`\`\`json|\`\`\`/g,"").trim());
+      if (!parsed.multi) {
+        const item = { ...parsed, text: fav.text, time: nowTime };
+        if (parsed.type === "alcohol") {
+          onAlcoholUpdate([...alcoholItems, item]);
+        } else if (parsed.type === "both") {
+          onUpdate([...foodItems, item]);
+          onAlcoholUpdate([...alcoholItems, item]);
+        } else {
+          onUpdate([...foodItems, item]);
+        }
+        setText("");
+      } else {
+        // Multi — fall through to pending display
+        const newFood = [], newDrinks = [];
+        for (const it of parsed.items) {
+          const t = it.suggested_time || nowTime;
+          if (it.type === "alcohol") newDrinks.push({ ...it, time: t });
+          else if (it.type === "both") { newFood.push({ ...it, time: t }); newDrinks.push({ ...it, time: t }); }
+          else newFood.push({ ...it, time: t });
+        }
+        if (newFood.length)   onUpdate([...foodItems, ...newFood]);
+        if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks]);
+        setText("");
+      }
+    } catch(e) { setError(e.message || "Couldn't add favourite — try again."); }
+    setLoading(false);
+  };
+
+  // Save current pending item as a favourite
+  const saveAsFavourite = () => {
+    if (!pending?.text) return;
+    addFavourite({ text: pending.text, calories: pending.calories });
+    setFavourites(getFavourites());
+  };
+
   const addItem = () => {
     const nowTime = pendingTime;
     if (pending) {
@@ -728,13 +804,40 @@ Be realistic. UK measurements and British English.`
         </div>
       )}
 
-      <textarea placeholder="e.g. bowl of porridge with banana, pint of Guinness, glass of red wine…" value={text} onChange={e=>setText(e.target.value)}
+      {/* Favourites dropdown */}
+      {favourites.length > 0 && (
+        <div style={{ marginBottom:8, position:"relative" }}>
+          <button onClick={()=>setShowFavs(v=>!v)}
+            style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fdf6ee", color:"#a07850", fontSize:13, fontFamily:"inherit", fontWeight:600, width:"100%" }}>
+            <span>⭐</span>
+            <span>Favourites</span>
+            <span style={{ marginLeft:"auto", fontSize:11 }}>{showFavs ? "▲" : "▼"}</span>
+          </button>
+          {showFavs && (
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #e0ccb4", borderRadius:10, boxShadow:"0 4px 16px #c8955a22", marginTop:4, maxHeight:220, overflowY:"auto" }}>
+              {favourites.map((fav, i) => (
+                <button key={i} onClick={()=>tapFavourite(fav)} disabled={loading}
+                  style={{ display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%", padding:"11px 14px", background:"none", border:"none", borderBottom: i < favourites.length-1 ? "1px solid #f0e8d8" : "none", fontFamily:"inherit", textAlign:"left", cursor:"pointer" }}>
+                  <span style={{ fontSize:14, color:"#3d2b1a" }}>{fav.text}</span>
+                  <span style={{ fontSize:12, color:"#a07850", flexShrink:0, marginLeft:8 }}>{fav.calories} kcal</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <textarea ref={textareaRef} placeholder="e.g. bowl of porridge with banana, pint of Guinness, glass of red wine…" value={text} onChange={e=>setText(e.target.value)}
+        onFocus={()=>{ if(favourites.length>0) setShowFavs(true); }}
         style={{ width:"100%", minHeight:72, padding:"10px 12px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#3d2b1a", resize:"vertical", outline:"none" }} />
       {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
 
       <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
         <AnalyseBtn onClick={analyse} disabled={!text.trim()||loading}>Analyse</AnalyseBtn>
         {isPending && !pending?._multiSummary && <AnalyseBtn onClick={addItem} color="#6a9e6a">✓ Add to log</AnalyseBtn>}
+        {isPending && !pending?._multiSummary && pending?.text && !favourites.find(f=>f.text===pending.text) && (
+          <AnalyseBtn onClick={saveAsFavourite} color="#a07850">⭐ Save</AnalyseBtn>
+        )}
       </div>
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
 
@@ -1398,6 +1501,9 @@ function SettingsScreen({ onClose }) {
   const [backing, setBacking] = useState(false);
   const [backupMsg, setBackupMsg] = useState("");
   const [backupErr, setBackupErr] = useState("");
+  const [favs, setFavs] = useState(()=>getFavourites());
+  const [newFavText, setNewFavText] = useState("");
+  const [newFavCals, setNewFavCals] = useState("");
   const connected = !!getFitbitToken();
   const driveConnected = isGDriveConnected();
   const lastBackup = getLastBackup();
@@ -1410,6 +1516,16 @@ function SettingsScreen({ onClose }) {
       setBackupMsg("✓ Backed up as " + filename);
     } catch(e) { setBackupErr(e.message); }
     setBacking(false);
+  };
+  const addFav = () => {
+    if (!newFavText.trim() || !newFavCals) return;
+    addFavourite({ text: newFavText.trim(), calories: parseInt(newFavCals) });
+    setFavs(getFavourites());
+    setNewFavText(""); setNewFavCals("");
+  };
+  const removeFav = (text) => {
+    removeFavourite(text);
+    setFavs(getFavourites());
   };
 
   const inputCost  = ((sessionUsage.input  / 1e6) * 2.37).toFixed(4);
@@ -1536,6 +1652,52 @@ function SettingsScreen({ onClose }) {
             </button>
           </div>
         )}
+      </div>
+
+      <SectionDivider />
+
+      {/* Favourites */}
+      <div>
+        <Label>Favourites</Label>
+        <div style={{ fontSize:12, color:"#a07850", marginBottom:12, lineHeight:1.6 }}>
+          Saved items appear as a dropdown when you tap the food entry box. You can also save items directly from the log using the ⭐ Save button after analysing.
+        </div>
+        {/* Existing favourites */}
+        {favs.length > 0 ? (
+          <div style={{ marginBottom:14, display:"flex", flexDirection:"column", gap:6 }}>
+            {favs.map((f,i)=>(
+              <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 12px", background:"#faf6f0", borderRadius:10, border:"1.5px solid #ecdfc8" }}>
+                <div>
+                  <div style={{ fontSize:14, color:"#3d2b1a" }}>{f.text}</div>
+                  <div style={{ fontSize:11, color:"#a07850", marginTop:2 }}>{f.calories} kcal</div>
+                </div>
+                <button onClick={()=>removeFav(f.text)}
+                  style={{ background:"none", border:"none", color:"#c87a6a", fontSize:18, padding:"4px 8px", cursor:"pointer", lineHeight:1 }}>✕</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize:13, color:"#a07850", marginBottom:12 }}>No favourites saved yet.</div>
+        )}
+        {/* Add new favourite */}
+        <div style={{ display:"flex", gap:8, alignItems:"flex-end", flexWrap:"wrap" }}>
+          <div style={{ flex:"2 1 160px" }}>
+            <div style={{ fontSize:11, color:"#a07850", marginBottom:4 }}>Name</div>
+            <input value={newFavText} onChange={e=>setNewFavText(e.target.value)}
+              placeholder="e.g. Cup of tea with milk"
+              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#3d2b1a", outline:"none" }} />
+          </div>
+          <div style={{ flex:"1 1 70px" }}>
+            <div style={{ fontSize:11, color:"#a07850", marginBottom:4 }}>Kcal</div>
+            <input type="number" value={newFavCals} onChange={e=>setNewFavCals(e.target.value)}
+              placeholder="15"
+              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#3d2b1a", outline:"none" }} />
+          </div>
+          <button onClick={addFav} disabled={!newFavText.trim()||!newFavCals}
+            style={{ padding:"9px 16px", background: (!newFavText.trim()||!newFavCals)?"#d0b898":"#c8955a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600, flexShrink:0 }}>
+            + Add
+          </button>
+        </div>
       </div>
 
       <SectionDivider />
