@@ -40,6 +40,7 @@ const COACHING_KEY         = "nourish-coaching-style";
 const SESSION_USAGE_KEY    = "nourish-session-usage";
 const GDRIVE_TOKEN_KEY     = "nourish-gdrive-token";
 const GDRIVE_LAST_BACKUP   = "nourish-last-backup";
+const DUMMY_SEEDED_KEY     = "nourish-dummy-seeded";
 const GDRIVE_CLIENT_ID     = "841458188245-8rdmltdj4acjb0c4fisrf44vmedovuc3.apps.googleusercontent.com";
 const GDRIVE_SCOPE         = "https://www.googleapis.com/auth/drive.file";
 const BACKUP_INTERVAL_DAYS = 7;
@@ -197,7 +198,76 @@ function shouldAutoBackup() {
 }
 
 
-// ── Claude ────────────────────────────────────────────────────────────────────
+// ── Dummy data seeder (for previewing graphs) ─────────────────────────────────
+function seedDummyData() {
+  if (ls.str(DUMMY_SEEDED_KEY)) return;
+  const entries = loadEntries();
+  const alcTypes = [
+    { text:"Pint of lager (4%)", units:2.3 },
+    { text:"Glass of red wine (175ml, 13%)", units:2.3 },
+    { text:"Bottle of beer (330ml, 5%)", units:1.65 },
+    { text:"Double gin & tonic", units:2.0 },
+  ];
+  const meals = [
+    [{ meal:"Breakfast", text:"Porridge with berries", calories:320, time:"08:00" }, { meal:"Lunch", text:"Chicken salad sandwich", calories:480, time:"13:00" }, { meal:"Dinner", text:"Salmon with roasted veg", calories:620, time:"19:00" }],
+    [{ meal:"Breakfast", text:"Scrambled eggs on toast", calories:410, time:"08:30" }, { meal:"Lunch", text:"Tomato soup and bread", calories:390, time:"12:30" }, { meal:"Dinner", text:"Beef stir fry with noodles", calories:720, time:"19:30" }],
+    [{ meal:"Breakfast", text:"Greek yogurt and granola", calories:350, time:"08:00" }, { meal:"Lunch", text:"Tuna jacket potato", calories:510, time:"13:00" }, { meal:"Dinner", text:"Chicken curry and rice", calories:780, time:"20:00" }],
+    [{ meal:"Breakfast", text:"Banana and peanut butter on toast", calories:430, time:"09:00" }, { meal:"Lunch", text:"Caesar salad with chicken", calories:440, time:"13:30" }, { meal:"Dinner", text:"Lamb chops with mash", calories:810, time:"19:00" }],
+    [{ meal:"Breakfast", text:"Avocado toast with poached egg", calories:390, time:"08:00" }, { meal:"Lunch", text:"Lentil soup", calories:340, time:"12:00" }, { meal:"Dinner", text:"Pasta with tomato sauce", calories:650, time:"19:30" }],
+    [{ meal:"Breakfast", text:"Overnight oats", calories:370, time:"08:00" }, { meal:"Lunch", text:"Ham and cheese panini", calories:520, time:"13:00" }, { meal:"Dinner", text:"Fish and chips (pub)", calories:920, time:"19:00" }],
+    [{ meal:"Breakfast", text:"Bagel with smoked salmon", calories:450, time:"09:30" }, { meal:"Lunch", text:"Minestrone soup", calories:310, time:"13:00" }, { meal:"Dinner", text:"Roast chicken with veg", calories:740, time:"18:30" }],
+  ];
+  // alcohol on some days: [units, drinks]
+  const alcDays = [
+    [],
+    [{ text:"2 pints of lager (4%)", units:4.6 }],
+    [],
+    [{ text:"Glass of red wine (175ml, 13%)", units:2.3 }],
+    [],
+    [{ text:"3 pints of lager (4%), double gin & tonic", units:8.9 }],
+    [{ text:"Bottle of beer (330ml, 5%)", units:1.65 }],
+  ];
+  const bpData = [
+    { sys:128, dia:84, pulse:68 },
+    { sys:132, dia:86, pulse:72 },
+    { sys:126, dia:82, pulse:65 },
+    { sys:135, dia:88, pulse:75 },
+    { sys:124, dia:80, pulse:64 },
+    { sys:138, dia:90, pulse:78 },
+    { sys:129, dia:83, pulse:70 },
+  ];
+  const weights = [86.4, 86.2, 86.5, 86.3, 86.1, 86.4, 86.2];
+  const moods   = [3, 4, 3, 2, 4, 4, 3];
+  const energies= [3, 4, 2, 2, 4, 3, 3];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    if (entries[dateStr]) continue; // don't overwrite real data
+    const idx = 6 - i;
+    entries[dateStr] = {
+      food: meals[idx],
+      alcohol: alcDays[idx],
+      bpSystolic: bpData[idx].sys,
+      bpDiastolic: bpData[idx].dia,
+      bpPulse: bpData[idx].pulse,
+      weight: weights[idx],
+      mood: moods[idx],
+      energy: energies[idx],
+      exercise: idx === 1 ? "30 min run" : idx === 4 ? "45 min cycle" : null,
+    };
+  }
+  saveEntries(entries);
+  ls.setStr(DUMMY_SEEDED_KEY, "1");
+  return entries;
+}
+
+function clearDummyData() {
+  // Only remove days that were seeded (we can't know exactly which, so we mark and clear the flag)
+  ls.del(DUMMY_SEEDED_KEY);
+}
+
+
 async function askClaude(messages, systemPrompt) {
   const key = getApiKey();
   if (!key) throw new Error("No API key");
@@ -1117,14 +1187,19 @@ function InsightsTab({ entries }) {
   const [error, setError] = useState("");
 
   const days = Object.entries(entries).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
-  const moodData = [...days].reverse().map(([d,e])=>({ d:formatDate(d), mood:e.mood||0, energy:e.energy||0 }));
-  const calData  = [...days].reverse().map(([d,e])=>({ d:formatDate(d), cals:(e.food||[]).reduce((s,f)=>s+(f.calories||0),0) }));
+  const moodData   = [...days].reverse().map(([d,e])=>({ d:formatDate(d), mood:e.mood||0, energy:e.energy||0 }));
+  const calData    = [...days].reverse().map(([d,e])=>({ d:formatDate(d), cals:(e.food||[]).reduce((s,f)=>s+(f.calories||0),0) }));
   const weightData = [...days].filter(([,e])=>e.weight).reverse().map(([d,e])=>({ d:formatDate(d), w:parseFloat(e.weight) }));
   const stepsData  = [...days].filter(([,e])=>e.fitbit?.steps).reverse().map(([d,e])=>({ d:formatDate(d), s:e.fitbit.steps }));
-  const maxCals = Math.max(...calData.map(d=>d.cals),1);
+  const alcData    = [...days].reverse().map(([d,e])=>({ d:formatDate(d), u:parseFloat(((e.alcohol||[]).reduce((s,a)=>s+(a.units||0),0)).toFixed(1)) }));
+  const bpData     = [...days].filter(([,e])=>e.bpSystolic&&e.bpDiastolic).reverse().map(([d,e])=>({ d:formatDate(d), sys:e.bpSystolic, dia:e.bpDiastolic, pulse:e.bpPulse||null }));
+  const maxCals  = Math.max(...calData.map(d=>d.cals),1);
   const maxSteps = Math.max(...stepsData.map(d=>d.s),1);
+  const maxAlc   = Math.max(...alcData.map(d=>d.u),1);
   const minW = Math.min(...weightData.map(d=>d.w));
   const maxW = Math.max(...weightData.map(d=>d.w));
+  const minBP = Math.min(...bpData.map(d=>d.dia), 60);
+  const maxBP = Math.max(...bpData.map(d=>d.sys), 160);
 
   const getInsights = async () => {
     setLoading(true); setError("");
@@ -1204,6 +1279,81 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
               <polyline points={weightData.map((d,i)=>{const y=maxW===minW?60:100-((d.w-minW)/(maxW-minW))*80;return `${i*50+25},${y}`;}).join(" ")} fill="none" stroke="#a07850" strokeWidth={2.5} strokeLinejoin="round"/>
               {weightData.map((d,i)=>{const y=maxW===minW?60:100-((d.w-minW)/(maxW-minW))*80;return <g key={i}><circle cx={i*50+25} cy={y} r={4} fill="#a07850"/><text x={i*50+25} y={y-8} textAnchor="middle" fontSize={9} fill="#5a3e28">{d.w}</text><text x={i*50+25} y={118} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text></g>;})}
             </svg>
+          </div>
+        </Section>
+      )}
+
+      {alcData.some(d=>d.u>0) && (
+        <Section title="🍺 Alcohol (units)" accent="#a07850">
+          <div style={{ overflowX:"auto" }}>
+            <svg width={Math.max(alcData.length*50,300)} height={120}>
+              {/* guideline: 14 units/week = 2 per day dashed line */}
+              {(() => { const gy = 90-(2/maxAlc)*80; return <line x1={0} x2={alcData.length*50} y1={gy} y2={gy} stroke="#c87a6a55" strokeWidth={1} strokeDasharray="3 2"/>; })()}
+              {alcData.map((d,i)=>{ const h=(d.u/maxAlc)*80; return (
+                <g key={i}>
+                  <rect x={i*50+12} y={90-h} width={26} height={h||0} rx={4}
+                    fill={d.u>6?"#c87a6a":d.u>2?"#e0a060":"#6a9e6a"} opacity={0.85}/>
+                  {d.u>0 && <text x={i*50+25} y={Math.max(88-h,12)} textAnchor="middle" fontSize={9} fill="#5a3e28">{d.u}</text>}
+                  <text x={i*50+25} y={108} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text>
+                </g>
+              ); })}
+            </svg>
+          </div>
+          <div style={{ display:"flex", gap:14, marginTop:6, fontSize:11, flexWrap:"wrap" }}>
+            <span style={{color:"#6a9e6a"}}>■ ≤2 units</span>
+            <span style={{color:"#e0a060"}}>■ 2–6 units</span>
+            <span style={{color:"#c87a6a"}}>■ 6+ units</span>
+            <span style={{color:"#c87a6a", opacity:0.6}}>-- 2u/day guideline</span>
+          </div>
+        </Section>
+      )}
+
+      {bpData.length >= 2 && (
+        <Section title="❤️ Blood Pressure" accent="#c87a6a">
+          <div style={{ overflowX:"auto" }}>
+            {(() => {
+              const W = Math.max(bpData.length*60, 300);
+              const H = 130;
+              const pad = 10;
+              const chartH = 90;
+              const bpRange = maxBP - minBP || 40;
+              const yFor = v => pad + chartH - ((v - minBP) / bpRange) * chartH;
+              // grid lines at 90, 120, 140
+              const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
+              return (
+                <svg width={W} height={H}>
+                  {gridLines.map(v => {
+                    const y = yFor(v);
+                    const isThresh = v===140||v===90;
+                    return <g key={v}>
+                      <line x1={0} x2={W} y1={y} y2={y} stroke={isThresh?"#c87a6a55":"#ecdfc8"} strokeWidth={1} strokeDasharray={isThresh?"4 2":""}/>
+                      <text x={2} y={y-2} fontSize={8} fill={isThresh?"#c87a6a":"#a07850"}>{v}</text>
+                    </g>;
+                  })}
+                  {/* Systolic line */}
+                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")}
+                    fill="none" stroke="#c87a6a" strokeWidth={2.5} strokeLinejoin="round"/>
+                  {/* Diastolic line */}
+                  <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")}
+                    fill="none" stroke="#7a9ec8" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="4 2"/>
+                  {/* Dots + labels */}
+                  {bpData.map((d,i)=>(
+                    <g key={i}>
+                      <circle cx={i*60+30} cy={yFor(d.sys)} r={4} fill="#c87a6a"/>
+                      <circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/>
+                      <text x={i*60+30} y={yFor(d.sys)-6} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text>
+                      <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text>
+                      <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#a07850">{d.d.split(",")[0]}</text>
+                    </g>
+                  ))}
+                </svg>
+              );
+            })()}
+          </div>
+          <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12 }}>
+            <span style={{color:"#c87a6a"}}>— Systolic</span>
+            <span style={{color:"#7a9ec8"}}>-- Diastolic</span>
+            <span style={{color:"#c87a6a", fontSize:11, opacity:0.7}}>· dashed = 140/90 threshold</span>
           </div>
         </Section>
       )}
@@ -1406,6 +1556,20 @@ function SettingsScreen({ onClose }) {
           </div>
         )}
       </div>
+
+      <SectionDivider />
+
+      {/* Demo data */}
+      <div>
+        <Label>Demo Data</Label>
+        <div style={{ fontSize:12, color:"#a07850", marginBottom:10, lineHeight:1.6 }}>
+          7 days of sample data was added so you can preview the graphs. Remove it when you're ready to use the app for real.
+        </div>
+        <button onClick={()=>{ clearDummyData(); window.location.reload(); }}
+          style={{ padding:"10px 20px", background:"#c87a6a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+          Clear demo data
+        </button>
+      </div>
     </div>
   );
 }
@@ -1541,7 +1705,10 @@ function StatsBar({ entries }) {
 function App() {
   const [hasKey, setHasKey] = useState(!!getApiKey());
   const [tab, setTab] = useState("log");
-  const [entries, setEntries] = useState(()=>loadEntries());
+  const [entries, setEntries] = useState(() => {
+    const seeded = seedDummyData();
+    return seeded || loadEntries();
+  });
   const [currentDay, setCurrentDay] = useState(today());
   const [showSettings, setShowSettings] = useState(false);
   const fitbitConnected = !!getFitbitToken();
