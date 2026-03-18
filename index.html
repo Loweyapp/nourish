@@ -117,7 +117,16 @@ function saveFavourites(f)   { ls.set(FAVOURITES_KEY, f); }
 function addFavourite(fav)   {
   const favs = getFavourites();
   if (favs.find(f => f.text.toLowerCase() === fav.text.toLowerCase())) return; // no dupes
-  saveFavourites([...favs, fav]);
+  saveFavourites([...favs, { ...fav, useCount: 0 }]);
+}
+function incrementFavUseCount(texts) {
+  // texts is an array of favourite text strings that were just used
+  const favs = getFavourites().map(f =>
+    texts.includes(f.text) ? { ...f, useCount: (f.useCount || 0) + 1 } : f
+  );
+  // Re-sort by useCount descending
+  favs.sort((a, b) => (b.useCount || 0) - (a.useCount || 0));
+  saveFavourites(favs);
 }
 function removeFavourite(text) {
   saveFavourites(getFavourites().filter(f => f.text !== text));
@@ -599,6 +608,7 @@ function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayCo
   const [previewSrc, setPreviewSrc] = useState(null);
   const [error, setError] = useState("");
   const [showFavs, setShowFavs] = useState(false);
+  const [selectedFavs, setSelectedFavs] = useState([]); // texts of checked favourites
   const [favourites, setFavourites] = useState(()=>getFavourites());
   const textareaRef = useRef(null);
 
@@ -708,74 +718,56 @@ Be realistic. UK measurements and British English.`
   };
 
   // Auto-submit a favourite — runs it straight through analyse then adds
-  const tapFavourite = async (fav) => {
-    setShowFavs(false);
-    setText(fav.text);
-    setLoading(true); setPending(null); setPendingDrink(null); setError("");
+  // Direct-add selected favourites — no AI call needed, calories already stored
+  const addSelectedFavourites = () => {
+    if (!selectedFavs.length) return;
     const nowHour = new Date().getHours();
-    const nowTime = `${String(nowHour).padStart(2,"0")}:00`;
-    setPendingTime(nowTime);
-    try {
-      const resp = await askClaude(
-        [{ role:"user", content:`User entry: "${fav.text}"` }],
-        `You are a nutrition and drinks expert. The user may enter a single item or multiple meals at once, e.g. "Lunch 2 eggs and salad. Dinner steak and broccoli."
-
-Return ONLY valid JSON, no markdown.
-
-CRITICAL RULES:
-- "type" must be "alcohol" ONLY if the drink contains alcohol (beer, wine, spirits, cider etc). Non-alcoholic drinks (water, juice, tea, coffee, coke, lemonade etc) are type "food".
-- "type" is "both" ONLY if the entry contains BOTH food AND an alcoholic drink.
-- "units" must be 0 for anything non-alcoholic. Never assign units to soft drinks, juices, or other non-alcoholic beverages.
-- UK alcohol units = (volume_ml * abv%) / 1000
-
-If SINGLE food or drink:
-{"multi":false,"type":"food"|"alcohol"|"both","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>,"commentary":"<2-3 sentences>"}
-
-If MULTIPLE meals/items:
-{"multi":true,"items":[{"text":"<description>","type":"food"|"alcohol"|"both","suggested_time":"<HH:00 best guess e.g. 08:00 for breakfast, 13:00 for lunch, 19:00 for dinner>","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>}],"commentary":"<2-3 sentence overall summary>"}
-
-User's day so far: ${dayContext}
-Accuracy rules:
-- Assume typical UK restaurant/home portions unless the user specifies (e.g. "large", "small", "half")
-- For branded items (e.g. "Big Mac", "Pret tuna baguette") use the actual published nutritional values
-- For homemade dishes, assume standard UK recipe quantities
-- Never round calories to the nearest 100 — give a realistic specific estimate
-- If the description is ambiguous about portion size, assume a standard adult portion
-Be realistic. UK measurements and British English.`
-      );
-      const parsed = JSON.parse(resp.replace(/\`\`\`json|\`\`\`/g,"").trim());
-      if (!parsed.multi) {
-        const item = { ...parsed, text: fav.text, time: nowTime };
-        if (parsed.type === "alcohol") {
-          onAlcoholUpdate([...alcoholItems, item]);
-        } else if (parsed.type === "both") {
-          onUpdate([...foodItems, item]);
-          onAlcoholUpdate([...alcoholItems, item]);
-        } else {
-          onUpdate([...foodItems, item]);
-        }
-        setText("");
+    const nowTime = String(nowHour).padStart(2,"0") + ":00";
+    const toAdd = favourites.filter(f => selectedFavs.includes(f.text));
+    const newFood = [];
+    const newDrinks = [];
+    toAdd.forEach(fav => {
+      const item = {
+        text: fav.text,
+        calories: fav.calories || 0,
+        protein_g: fav.protein_g || 0,
+        carbs_g: fav.carbs_g || 0,
+        fat_g: fav.fat_g || 0,
+        units: fav.units || 0,
+        time: nowTime,
+      };
+      if (fav.units > 0) {
+        newDrinks.push(item);
       } else {
-        // Multi — fall through to pending display
-        const newFood = [], newDrinks = [];
-        for (const it of parsed.items) {
-          const t = it.suggested_time || nowTime;
-          if (it.type === "alcohol") newDrinks.push({ ...it, time: t });
-          else if (it.type === "both") { newFood.push({ ...it, time: t }); newDrinks.push({ ...it, time: t }); }
-          else newFood.push({ ...it, time: t });
-        }
-        if (newFood.length)   onUpdate([...foodItems, ...newFood]);
-        if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks]);
-        setText("");
+        newFood.push(item);
       }
-    } catch(e) { setError(e.message || "Couldn't add favourite — try again."); }
-    setLoading(false);
+    });
+    if (newFood.length)   onUpdate([...foodItems, ...newFood]);
+    if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks]);
+    // Increment use counts and re-sort
+    incrementFavUseCount(selectedFavs);
+    setFavourites(getFavourites());
+    setSelectedFavs([]);
+    setShowFavs(false);
   };
 
-  // Save current pending item as a favourite
+  const toggleFavSelection = (text) => {
+    setSelectedFavs(prev =>
+      prev.includes(text) ? prev.filter(t => t !== text) : [...prev, text]
+    );
+  };
+
+  // Save current pending item as a favourite (store full nutrition for direct-add)
   const saveAsFavourite = () => {
     if (!pending?.text) return;
-    addFavourite({ text: pending.text, calories: pending.calories });
+    addFavourite({
+      text: pending.text,
+      calories: pending.calories || 0,
+      protein_g: pending.protein_g || 0,
+      carbs_g: pending.carbs_g || 0,
+      fat_g: pending.fat_g || 0,
+      units: pendingDrink?.units || 0,
+    });
     setFavourites(getFavourites());
   };
 
@@ -830,24 +822,42 @@ Be realistic. UK measurements and British English.`
         </div>
       )}
 
-      {/* Favourites dropdown */}
+      {/* Favourites dropdown with checkboxes */}
       {favourites.length > 0 && (
         <div style={{ marginBottom:8, position:"relative" }}>
-          <button onClick={()=>setShowFavs(v=>!v)}
+          <button onClick={()=>{ setShowFavs(v=>!v); if(showFavs) setSelectedFavs([]); }}
             style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fdf6ee", color:"#a07850", fontSize:13, fontFamily:"inherit", fontWeight:600, width:"100%" }}>
             <span>⭐</span>
-            <span>Favourites</span>
+            <span>Favourites{selectedFavs.length > 0 ? " (" + selectedFavs.length + " selected)" : ""}</span>
             <span style={{ marginLeft:"auto", fontSize:11 }}>{showFavs ? "▲" : "▼"}</span>
           </button>
           {showFavs && (
-            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #e0ccb4", borderRadius:10, boxShadow:"0 4px 16px #c8955a22", marginTop:4, maxHeight:220, overflowY:"auto" }}>
-              {favourites.map((fav, i) => (
-                <button key={i} onClick={()=>tapFavourite(fav)} disabled={loading}
-                  style={{ display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%", padding:"11px 14px", background:"none", border:"none", borderBottom: i < favourites.length-1 ? "1px solid #f0e8d8" : "none", fontFamily:"inherit", textAlign:"left", cursor:"pointer" }}>
-                  <span style={{ fontSize:14, color:"#3d2b1a" }}>{fav.text}</span>
-                  <span style={{ fontSize:12, color:"#a07850", flexShrink:0, marginLeft:8 }}>{fav.calories ? fav.calories + " kcal" : "—"}</span>
-                </button>
-              ))}
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #e0ccb4", borderRadius:10, boxShadow:"0 4px 16px #c8955a22", marginTop:4, maxHeight:260, overflowY:"auto" }}>
+              {favourites.map((fav, i) => {
+                const checked = selectedFavs.includes(fav.text);
+                return (
+                  <div key={i} onClick={()=>toggleFavSelection(fav.text)}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", cursor:"pointer",
+                      background: checked ? "#fdf0e0" : "none",
+                      borderBottom: i < favourites.length-1 ? "1px solid #f0e8d8" : "none" }}>
+                    <div style={{ width:20, height:20, borderRadius:5, border:"2px solid " + (checked ? "#c8955a" : "#d0b898"),
+                      background: checked ? "#c8955a" : "#fff", flexShrink:0,
+                      display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {checked && <span style={{ color:"#fff", fontSize:13, lineHeight:1, fontWeight:700 }}>✓</span>}
+                    </div>
+                    <span style={{ flex:1, fontSize:14, color:"#3d2b1a" }}>{fav.text}</span>
+                    <span style={{ fontSize:12, color:"#a07850", flexShrink:0 }}>{fav.calories ? fav.calories + " kcal" : "—"}</span>
+                  </div>
+                );
+              })}
+              {selectedFavs.length > 0 && (
+                <div style={{ padding:"10px 14px", borderTop:"1.5px solid #ecdfc8", background:"#fdf8f2" }}>
+                  <button onClick={addSelectedFavourites}
+                    style={{ width:"100%", padding:"10px", background:"#c8955a", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontFamily:"inherit", fontWeight:700, cursor:"pointer" }}>
+                    {"+ Add " + selectedFavs.length + " item" + (selectedFavs.length > 1 ? "s" : "") + " to log"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
