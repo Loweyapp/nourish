@@ -8,19 +8,19 @@
 <title>✦ Nourish</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#1e1408">
+<meta name="theme-color" content="#ffffff">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f5f0e8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e1408; -webkit-tap-highlight-color: transparent; }
+  body { background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; -webkit-tap-highlight-color: transparent; }
   @keyframes spin { to { transform: rotate(360deg); } }
   button, label { transition: opacity 0.15s; cursor: pointer; }
   button:active, label:active { opacity: 0.7; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #d8d0c4; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
   input[type=number]::-webkit-inner-spin-button { opacity: 1; }
   select { -webkit-appearance: auto; }
 </style>
@@ -500,8 +500,8 @@ const Icon = ({ name, size=18, color="currentColor" }) => {
 // ── Shared UI ─────────────────────────────────────────────────────────────────
 function Spinner({ small, label }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:8, color:"#8a7a6a", fontSize: small ? 12 : 13 }}>
-      <div style={{ width: small?12:16, height: small?12:16, border:"2px solid #e8e0d4", borderTopColor:"#8a7a6a", borderRadius:"50%", animation:"spin 0.8s linear infinite", flexShrink:0 }} />
+    <div style={{ display:"flex", alignItems:"center", gap:8, color:"#888888", fontSize: small ? 12 : 13 }}>
+      <div style={{ width: small?12:16, height: small?12:16, border:"2px solid #efefef", borderTopColor:"#888888", borderRadius:"50%", animation:"spin 0.8s linear infinite", flexShrink:0 }} />
       {label || (!small && "Claude is thinking…")}
     </div>
   );
@@ -510,8 +510,8 @@ function AIBubble({ text, loading }) {
   if (loading) return <div style={{ marginTop:10 }}><Spinner /></div>;
   if (!text) return null;
   return (
-    <div style={{ marginTop:10, padding:"14px 16px", background:"#fdf7f0", borderLeft:"3px solid #c8955a", borderRadius:"0 12px 12px 0", fontSize:13.5, lineHeight:1.7, color:"#3a2810", whiteSpace:"pre-wrap" }}>
-      <span style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#8a7a6a", display:"block", marginBottom:4 }}>✦ AI INSIGHT</span>
+    <div style={{ marginTop:10, padding:"14px 16px", background:"#fafafa", borderLeft:"3px solid #9ebd6e", borderRadius:"0 12px 12px 0", fontSize:13.5, lineHeight:1.7, color:"#333333", whiteSpace:"pre-wrap" }}>
+      <span style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888888", display:"block", marginBottom:4 }}>✦ AI INSIGHT</span>
       {text}
     </div>
   );
@@ -535,65 +535,68 @@ function ChatWidget({ systemPrompt, contextSummary, placeholder="Ask a follow-up
     setLoading(false);
   };
   return (
-    <div style={{ marginTop:12, borderTop:"1px solid #e8e0d4", paddingTop:12 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#8a7a6a", letterSpacing:1, marginBottom:8 }}>💬 ASK A FOLLOW-UP</div>
+    <div style={{ marginTop:12, borderTop:"1px solid #efefef", paddingTop:12 }}>
+      <div style={{ fontSize:11, fontWeight:700, color:"#888888", letterSpacing:1, marginBottom:8 }}>💬 ASK A FOLLOW-UP</div>
       {history.length > 0 && (
         <div style={{ maxHeight:260, overflowY:"auto", marginBottom:10, display:"flex", flexDirection:"column", gap:8 }}>
           {history.map((m,i) => (
-            <div key={i} style={{ alignSelf:m.role==="user"?"flex-end":"flex-start", maxWidth:"85%", padding:"8px 12px", borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px", background:m.role==="user"?"#c8955a":"#f5e9d6", color:m.role==="user"?"#fff":"#1e1408", fontSize:13.5, lineHeight:1.55, whiteSpace:"pre-wrap" }}>{m.content}</div>
+            <div key={i} style={{ alignSelf:m.role==="user"?"flex-end":"flex-start", maxWidth:"85%", padding:"8px 12px", borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px", background:m.role==="user"?"#9ebd6e":"#111111", color:m.role==="user"?"#fff":"#ffffff", fontSize:13.5, lineHeight:1.55, whiteSpace:"pre-wrap" }}>{m.content}</div>
           ))}
-          {loading && <div style={{ alignSelf:"flex-start", padding:"8px 12px", background:"#f5e9d6", borderRadius:"14px 14px 14px 4px" }}><Spinner small /></div>}
+          {loading && <div style={{ alignSelf:"flex-start", padding:"8px 12px", background:"#111111", borderRadius:"14px 14px 14px 4px" }}><Spinner small /></div>}
           <div ref={bottomRef} />
         </div>
       )}
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginBottom:6 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginBottom:6 }}>{error}</div>}
       <div style={{ display:"flex", gap:8 }}>
         <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }} placeholder={placeholder}
-          style={{ flex:1, padding:"10px 13px", borderRadius:10, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", outline:"none" }} />
+          style={{ flex:1, padding:"10px 13px", borderRadius:10, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", outline:"none" }} />
         <button onClick={send} disabled={!input.trim()||loading}
-          style={{ padding:"10px 16px", background:"#c8955a", color:"#fff", border:"none", borderRadius:10, fontSize:18, fontFamily:"inherit", fontWeight:700 }}>↑</button>
+          style={{ padding:"10px 16px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:10, fontSize:18, fontFamily:"inherit", fontWeight:700 }}>↑</button>
       </div>
     </div>
   );
 }
-function Pill({ selected, onClick, children, color="#c8955a" }) {
-  return <button onClick={onClick} style={{ padding:"7px 14px", borderRadius:20, border:`1.5px solid ${selected?color:"#e8e0d4"}`, background:selected?color:"transparent", color:selected?"#fff":"#6a5a4a", fontSize:14, fontFamily:"inherit" }}>{children}</button>;
+function Pill({ selected, onClick, children, color="#9ebd6e" }) {
+  return <button onClick={onClick} style={{ padding:"7px 14px", borderRadius:20, border:`1.5px solid ${selected?color:"#efefef"}`, background:selected?color:"transparent", color:selected?"#fff":"#666666", fontSize:14, fontFamily:"inherit" }}>{children}</button>;
 }
-function EmojiPicker({ options, value, onChange }) {
+function EmojiPicker({ options, value, onChange, accent="#805d93" }) {
   return (
     <div style={{ display:"flex", gap:8 }}>
       {options.map(o => (
         <button key={o.value} onClick={()=>onChange(o.value)} title={o.label}
           style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             padding:"10px 4px 8px", borderRadius:12,
-            border: value===o.value ? "2px solid #c8955a" : "1.5px solid #e8e0d4",
-            background: value===o.value ? "#fdf0e0" : "#faf7f3",
+            border: value===o.value ? `2px solid ${accent}` : "1.5px solid #efefef",
+            background: value===o.value ? "#fafafa" : "#f9f9f9",
             transition:"all 0.15s", fontFamily:"inherit", cursor:"pointer" }}>
           <span style={{ fontSize:22, lineHeight:1 }}>{o.emoji}</span>
-          <span style={{ fontSize:9, fontWeight: value===o.value?700:500, color: value===o.value?"#c8955a":"#8a7a6a", letterSpacing:0.3 }}>{o.label}</span>
+          <span style={{ fontSize:9, fontWeight: value===o.value?700:500, color: value===o.value?accent:"#888888", letterSpacing:0.3 }}>{o.label}</span>
         </button>
       ))}
     </div>
   );
 }
-function Section({ title, accent="#c8955a", children }) {
+function Section({ title, accent="#9ebd6e", children }) {
   return (
-    <div style={{ background:"#fff", borderRadius:16, padding:"16px 18px 20px", boxShadow:"0 1px 8px rgba(0,0,0,0.07)", border:"1px solid rgba(0,0,0,0.06)" }}>
-      <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.2, color:"#7a9e8a", textTransform:"uppercase", marginBottom:8 }}>{title}</div>
+    <div style={{ background:"#fff", borderRadius:16, padding:"16px 18px 20px", boxShadow:"0 1px 8px rgba(0,0,0,0.06)", border:"1px solid #efefef" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+        <span style={{ width:7, height:7, borderRadius:"50%", background:accent, display:"inline-block", flexShrink:0 }} />
+        <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.2, color:accent, textTransform:"uppercase" }}>{title}</span>
+      </div>
       {children}
     </div>
   );
 }
 function Label({ children }) {
-  return <div style={{ fontSize:11, fontWeight:700, color:"#7a9e8a", marginBottom:6, letterSpacing:1, textTransform:"uppercase" }}>{children}</div>;
+  return <div style={{ fontSize:11, fontWeight:700, color:"#888888", marginBottom:6, letterSpacing:1, textTransform:"uppercase" }}>{children}</div>;
 }
-function AnalyseBtn({ onClick, disabled, color="#c8955a", children }) {
-  return <button onClick={onClick} disabled={disabled} style={{ padding:"10px 22px", background:disabled?"#d8d0c4":color, color:disabled?"#a89888":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, marginTop:6, letterSpacing:0.2 }}>{children}</button>;
+function AnalyseBtn({ onClick, disabled, color="#9ebd6e", children }) {
+  return <button onClick={onClick} disabled={disabled} style={{ padding:"10px 22px", background:disabled?"#e0e0e0":color, color:disabled?"#aaaaaa":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, marginTop:6, letterSpacing:0.2 }}>{children}</button>;
 }
 function HourSelect({ value, onChange }) {
   return (
     <select value={value} onChange={e=>onChange(e.target.value)}
-      style={{ fontSize:12, color:"#8a7a6a", background:"none", border:"none", borderBottom:"1px dashed #d8d0c4", padding:"2px 4px", fontFamily:"inherit", cursor:"pointer", outline:"none" }}>
+      style={{ fontSize:12, color:"#888888", background:"none", border:"none", borderBottom:"1px dashed #e0e0e0", padding:"2px 4px", fontFamily:"inherit", cursor:"pointer", outline:"none" }}>
       {Array.from({length:19},(_,i)=>i+6).map(h => {
         const val = `${String(h).padStart(2,"0")}:00`;
         const label = h<12?`${h}am`:h===12?"12pm":`${h-12}pm`;
@@ -604,16 +607,16 @@ function HourSelect({ value, onChange }) {
 }
 function StatPill({ label, value, unit, color }) {
   return (
-    <div style={{ flex:"1 1 90px", textAlign:"center", padding:"10px 6px", background:"#f8f5f0", borderRadius:12, border:`1px solid ${color}22` }}>
+    <div style={{ flex:"1 1 90px", textAlign:"center", padding:"10px 6px", background:"#f8f8f8", borderRadius:12, border:`1px solid ${color}22` }}>
       <div style={{ fontSize:17, fontWeight:700, color }}>{value ?? "—"}</div>
-      <div style={{ fontSize:10, color:"#8a7a6a", letterSpacing:0.3, marginTop:2 }}>{unit} {label}</div>
+      <div style={{ fontSize:10, color:"#888888", letterSpacing:0.3, marginTop:2 }}>{unit} {label}</div>
     </div>
   );
 }
-function ProgressBar({ value, max, color="#c8955a" }) {
+function ProgressBar({ value, max, color="#9ebd6e" }) {
   const pct = Math.min(100, Math.round((value/max)*100));
   return (
-    <div style={{ background:"#ede8e0", borderRadius:6, height:6, overflow:"hidden", marginTop:6 }}>
+    <div style={{ background:"#eeeeee", borderRadius:6, height:6, overflow:"hidden", marginTop:6 }}>
       <div style={{ width:`${pct}%`, height:"100%", background:color, borderRadius:6, transition:"width 0.4s" }} />
     </div>
   );
@@ -623,17 +626,17 @@ function ProgressBar({ value, max, color="#c8955a" }) {
 function ApiKeyScreen({ onSave }) {
   const [key, setKey] = useState("");
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f5f0e8", padding:24 }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f5f5f5", padding:24 }}>
       <div style={{ maxWidth:400, width:"100%" }}>
-        <div style={{ fontSize:28, fontWeight:700, color:"#1e1408", marginBottom:8 }}>✦ Nourish</div>
-        <div style={{ fontSize:14, color:"#8a7a6a", marginBottom:24, lineHeight:1.6 }}>
+        <div style={{ fontSize:28, fontWeight:700, color:"#111111", marginBottom:8 }}>✦ Nourish</div>
+        <div style={{ fontSize:14, color:"#888888", marginBottom:24, lineHeight:1.6 }}>
           Enter your Anthropic API key to get started. Stored only on this device.
         </div>
-        <div style={{ fontSize:13, color:"#6a5a4a", marginBottom:8 }}>Get a key at <b>console.anthropic.com</b></div>
+        <div style={{ fontSize:13, color:"#666666", marginBottom:8 }}>Get a key at <b>console.anthropic.com</b></div>
         <input type="password" placeholder="sk-ant-..." value={key} onChange={e=>setKey(e.target.value)}
-          style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"monospace", fontSize:14, color:"#1e1408", outline:"none", marginBottom:12 }} />
+          style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"monospace", fontSize:14, color:"#111111", outline:"none", marginBottom:12 }} />
         <button onClick={()=>{ if(key.trim()){ saveApiKey(key.trim()); onSave(); }}}
-          style={{ width:"100%", padding:"12px", background:"linear-gradient(135deg,#c8955a,#a07850)", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontFamily:"inherit", fontWeight:700 }}>
+          style={{ width:"100%", padding:"12px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontFamily:"inherit", fontWeight:700 }}>
           Get started
         </button>
       </div>
@@ -650,11 +653,11 @@ function FoodSummaryHeader({ foodItems, totalCals }) {
   return (
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:14 }}>
       <div>
-        <span style={{ fontSize:36, fontWeight:800, color:"#1e1408", lineHeight:1 }}>{totalCals}</span>
-        <span style={{ fontSize:14, color:"#8a7a6a", marginLeft:4 }}>kcal today</span>
+        <span style={{ fontSize:36, fontWeight:800, color:"#9ebd6e", lineHeight:1 }}>{totalCals}</span>
+        <span style={{ fontSize:14, color:"#888888", marginLeft:4 }}>kcal today</span>
       </div>
       {(tp>0||tc>0||tf>0) && (
-        <div style={{ textAlign:"right", fontSize:12, color:"#8a7a6a", lineHeight:1.8 }}>
+        <div style={{ textAlign:"right", fontSize:12, color:"#888888", lineHeight:1.8 }}>
           {tp}g protein<br />{tc}g carbs · {tf}g fat
         </div>
       )}
@@ -869,54 +872,54 @@ Be realistic. UK measurements and British English.`
   ].sort((a,b) => (a.time||"").localeCompare(b.time||""));
 
   const renderLogItem = (item, idx, key) => item._type === "food" ? (
-    <div key={`${key}-f${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
+    <div key={`${key}-f${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f5f5f5" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
-          <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.text}</div>
+          <div style={{ fontWeight:600, color:"#111111", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.text}</div>
           <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
             <HourSelect value={item.time||"08:00"} onChange={t=>updateFoodTime(item._i,t)} />
-            {item.meal && <span style={{ fontSize:11, color:"#8a7a6a" }}>· {item.meal}</span>}
+            {item.meal && <span style={{ fontSize:11, color:"#888888" }}>· {item.meal}</span>}
           </div>
           {(item.protein_g||item.carbs_g||item.fat_g) ? (
             <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
-              {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf5f0", color:"#4a8a5a", fontWeight:600 }}>{Math.round(item.protein_g)}g P</span>}
-              {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf0f8", color:"#4a5a9a", fontWeight:600 }}>{Math.round(item.carbs_g)}g C</span>}
-              {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f8eeec", color:"#8a4a3a", fontWeight:600 }}>{Math.round(item.fat_g)}g F</span>}
+              {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f0faf5", color:"#4a8a50", fontWeight:600 }}>{Math.round(item.protein_g)}g P</span>}
+              {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#eef4ff", color:"#3a68c0", fontWeight:600 }}>{Math.round(item.carbs_g)}g C</span>}
+              {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#ffeef4", color:"#901840", fontWeight:600 }}>{Math.round(item.fat_g)}g F</span>}
             </div>
           ) : null}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{item.calories}</div>
-            <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>kcal</div>
+            <div style={{ fontWeight:700, color:"#9ebd6e", fontSize:18, lineHeight:1 }}>{item.calories}</div>
+            <div style={{ fontSize:10, color:"#888888", marginTop:1 }}>kcal</div>
           </div>
-          <button onClick={()=>removeFood(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
+          <button onClick={()=>removeFood(item._i)} style={{ background:"none", border:"none", color:"#cccccc", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
         </div>
       </div>
     </div>
   ) : (
-    <div key={`${key}-d${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
+    <div key={`${key}-d${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f5f5f5" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
-          <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.drink_type || item.text}</div>
+          <div style={{ fontWeight:600, color:"#111111", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.drink_type || item.text}</div>
           <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
             <HourSelect value={item.time||"08:00"} onChange={t=>updateDrinkTime(item._i,t)} />
-            <span style={{ fontSize:11, color:"#8a7a6a", display:"flex", alignItems:"center", gap:3 }}>· <Icon name="beer" size={15} color="#8a7a6a"/> Drink</span>
+            <span style={{ fontSize:11, color:"#888888", display:"flex", alignItems:"center", gap:3 }}>· <Icon name="beer" size={15} color="#888888"/> Drink</span>
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{(item.units||0).toFixed(1)}u</div>
-            <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>units</div>
+            <div style={{ fontWeight:700, color:"#9ebd6e", fontSize:18, lineHeight:1 }}>{(item.units||0).toFixed(1)}u</div>
+            <div style={{ fontSize:10, color:"#888888", marginTop:1 }}>units</div>
           </div>
-          <button onClick={()=>removeDrink(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
+          <button onClick={()=>removeDrink(item._i)} style={{ background:"none", border:"none", color:"#cccccc", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
         </div>
       </div>
     </div>
   );
 
   return (
-    <Section title="FOOD & DRINK" accent="#c8955a">
+    <Section title="FOOD & DRINK" accent="#9ebd6e">
       {totalCals > 0 && <FoodSummaryHeader foodItems={foodItems} totalCals={totalCals} />}
 
       <input id="nourish-camera" type="file" accept="image/*" capture="environment" style={{ display:"none" }}
@@ -925,20 +928,20 @@ Be realistic. UK measurements and British English.`
         onChange={e=>{ handleImage(e.target.files?.[0]); e.target.value=""; }} />
       <div style={{ display:"flex", gap:8, marginBottom:12 }}>
         <label htmlFor="nourish-camera"
-          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border:"1.5px solid #e8e0d4", background:"#faf7f3", color:"#6a5a4a", fontSize:12, fontFamily:"inherit", userSelect:"none", fontWeight:500, cursor:"pointer" }}>
-          <Icon name="camera" size={22} color="#6a5a4a"/>
+          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border:"1.5px solid #efefef", background:"#f9f9f9", color:"#666666", fontSize:12, fontFamily:"inherit", userSelect:"none", fontWeight:500, cursor:"pointer" }}>
+          <Icon name="camera" size={22} color="#666666"/>
           <span>Camera</span>
         </label>
         <label htmlFor="nourish-gallery"
-          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border:"1.5px solid #e8e0d4", background:"#faf7f3", color:"#6a5a4a", fontSize:12, fontFamily:"inherit", userSelect:"none", fontWeight:500, cursor:"pointer" }}>
-          <Icon name="gallery" size={22} color="#6a5a4a"/>
+          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border:"1.5px solid #efefef", background:"#f9f9f9", color:"#666666", fontSize:12, fontFamily:"inherit", userSelect:"none", fontWeight:500, cursor:"pointer" }}>
+          <Icon name="gallery" size={22} color="#666666"/>
           <span>Gallery</span>
         </label>
         <button onClick={()=>setShowFavs(v=>!v)}
-          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border: showFavs||selectedFavs.length>0 ? "1.5px solid #c8955a" : "1.5px solid #e8e0d4", background: showFavs||selectedFavs.length>0 ? "#fdf0e0" : "#faf7f3", color: showFavs||selectedFavs.length>0 ? "#c8955a" : "#6a5a4a", fontSize:12, fontFamily:"inherit", fontWeight:500, cursor:"pointer" }}>
+          style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, padding:"12px 8px", borderRadius:10, border: showFavs||selectedFavs.length>0 ? "1.5px solid #9ebd6e" : "1.5px solid #efefef", background: showFavs||selectedFavs.length>0 ? "#f5f5f5" : "#f9f9f9", color: showFavs||selectedFavs.length>0 ? "#9ebd6e" : "#666666", fontSize:12, fontFamily:"inherit", fontWeight:500, cursor:"pointer" }}>
           {selectedFavs.length > 0
-            ? <><Icon name="star" size={22} color="#c8955a"/><span>{selectedFavs.length} selected</span></>
-            : <><Icon name="star" size={22} color={showFavs?"#c8955a":"#6a5a4a"}/><span>Saved</span></>
+            ? <><Icon name="star" size={22} color="#9ebd6e"/><span>{selectedFavs.length} selected</span></>
+            : <><Icon name="star" size={22} color={showFavs?"#9ebd6e":"#666666"}/><span>Saved</span></>
           }
         </button>
       </div>
@@ -946,8 +949,8 @@ Be realistic. UK measurements and British English.`
       {imageLoading && <div style={{ marginBottom:10 }}><Spinner label="Identifying…" /></div>}
       {previewSrc && !imageLoading && (
         <div style={{ marginBottom:10, display:"flex", gap:10, alignItems:"flex-start" }}>
-          <img src={previewSrc} alt="item" style={{ width:72, height:72, objectFit:"cover", borderRadius:10, border:"1.5px solid #e8e0d4", flexShrink:0 }} />
-          <div style={{ fontSize:12, color:"#8a7a6a", lineHeight:1.5, paddingTop:2 }}>Identified — edit below if needed, then tap Analyse.</div>
+          <img src={previewSrc} alt="item" style={{ width:72, height:72, objectFit:"cover", borderRadius:10, border:"1.5px solid #efefef", flexShrink:0 }} />
+          <div style={{ fontSize:12, color:"#888888", lineHeight:1.5, paddingTop:2 }}>Identified — edit below if needed, then tap Analyse.</div>
         </div>
       )}
 
@@ -955,28 +958,28 @@ Be realistic. UK measurements and British English.`
       {favourites.length > 0 && (
         <div style={{ marginBottom:8, position:"relative" }}>
           {showFavs && (
-            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #e8e0d4", borderRadius:10, boxShadow:"0 4px 16px #c8955a22", marginTop:4, maxHeight:260, overflowY:"auto" }}>
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #efefef", borderRadius:10, boxShadow:"0 4px 16px #9ebd6e22", marginTop:4, maxHeight:260, overflowY:"auto" }}>
               {favourites.map((fav, i) => {
                 const checked = selectedFavs.includes(fav.text);
                 return (
                   <div key={i} onClick={()=>toggleFavSelection(fav.text)}
                     style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", cursor:"pointer",
-                      background: checked ? "#fdf0e0" : "none",
-                      borderBottom: i < favourites.length-1 ? "1px solid #f0e8d8" : "none" }}>
-                    <div style={{ width:20, height:20, borderRadius:5, border:"2px solid " + (checked ? "#c8955a" : "#d8d0c4"),
-                      background: checked ? "#c8955a" : "#fff", flexShrink:0,
+                      background: checked ? "#f5f5f5" : "none",
+                      borderBottom: i < favourites.length-1 ? "1px solid #f5f5f5" : "none" }}>
+                    <div style={{ width:20, height:20, borderRadius:5, border:"2px solid " + (checked ? "#9ebd6e" : "#e0e0e0"),
+                      background: checked ? "#9ebd6e" : "#fff", flexShrink:0,
                       display:"flex", alignItems:"center", justifyContent:"center" }}>
                       {checked && <span style={{ color:"#fff", fontSize:13, lineHeight:1, fontWeight:700 }}>✓</span>}
                     </div>
-                    <span style={{ flex:1, fontSize:14, color:"#1e1408" }}>{fav.text}</span>
-                    <span style={{ fontSize:12, color:"#8a7a6a", flexShrink:0 }}>{fav.calories ? fav.calories + " kcal" : "—"}</span>
+                    <span style={{ flex:1, fontSize:14, color:"#111111" }}>{fav.text}</span>
+                    <span style={{ fontSize:12, color:"#888888", flexShrink:0 }}>{fav.calories ? fav.calories + " kcal" : "—"}</span>
                   </div>
                 );
               })}
               {selectedFavs.length > 0 && (
-                <div style={{ padding:"10px 14px", borderTop:"1.5px solid #e8e0d4", background:"#f5f0e8" }}>
+                <div style={{ padding:"10px 14px", borderTop:"1.5px solid #efefef", background:"#f5f5f5" }}>
                   <button onClick={addSelectedFavourites}
-                    style={{ width:"100%", padding:"10px", background:"#c8955a", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontFamily:"inherit", fontWeight:700, cursor:"pointer" }}>
+                    style={{ width:"100%", padding:"10px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontFamily:"inherit", fontWeight:700, cursor:"pointer" }}>
                     {"+ Add " + selectedFavs.length + " item" + (selectedFavs.length > 1 ? "s" : "") + " to log"}
                   </button>
                 </div>
@@ -987,14 +990,14 @@ Be realistic. UK measurements and British English.`
       )}
 
       <textarea ref={textareaRef} placeholder="What did you eat or drink? Be specific for best accuracy…" value={text} onChange={e=>setText(e.target.value)}
-        style={{ width:"100%", minHeight:46, padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", resize:"none", outline:"none", lineHeight:1.5 }} />
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+        style={{ width:"100%", minHeight:46, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"none", outline:"none", lineHeight:1.5 }} />
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
 
       <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:2 }}>
         <AnalyseBtn onClick={analyse} disabled={!text.trim()||loading}>Analyse</AnalyseBtn>
         {isPending && !pending?._multiSummary && <AnalyseBtn onClick={addItem} color="#6a9e6a">✓ Add to log</AnalyseBtn>}
         {isPending && !pending?._multiSummary && pending?.text && !favourites.find(f=>f.text===pending.text) && (
-          <AnalyseBtn onClick={saveAsFavourite} color="#8a7a6a"><Icon name="star" size={15} color="#fff"/> Save</AnalyseBtn>
+          <AnalyseBtn onClick={saveAsFavourite} color="#888888"><Icon name="star" size={15} color="#fff"/> Save</AnalyseBtn>
         )}
       </div>
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
@@ -1003,18 +1006,18 @@ Be realistic. UK measurements and British English.`
         <div style={{ marginTop:12 }}>
           {!pending?._multiSummary && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-            <span style={{ fontSize:12, color:"#8a7a6a", fontWeight:600 }}>Time:</span>
+            <span style={{ fontSize:12, color:"#888888", fontWeight:600 }}>Time:</span>
             <HourSelect value={pendingTime} onChange={setPendingTime} />
           </div>
           )}
           {pending?._multiSummary && (
-            <div style={{ padding:"10px 12px", background:"#f0fdf0", borderRadius:10, border:"1.5px solid #6a9e6a33", marginBottom:10, fontSize:13, color:"#3d5a28" }}>
+            <div style={{ padding:"10px 12px", background:"#f0fdf5", borderRadius:10, border:"1.5px solid #6a9e6a33", marginBottom:10, fontSize:13, color:"#4a7a28" }}>
               <div style={{ fontWeight:700, color:"#6a9e6a", marginBottom:4 }}>✓ {pending.calories} kcal logged across multiple entries</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-                {[{label:"Protein",value:pending.protein_g,unit:"g",color:"#6a9e6a"},{label:"Carbs",value:pending.carbs_g,unit:"g",color:"#7a9ec8"},{label:"Fat",value:pending.fat_g,unit:"g",color:"#c87a6a"}].map(s=>(
-                  <div key={s.label} style={{ textAlign:"center", padding:"4px 10px", background:"#faf7f3", borderRadius:8, border:`1.5px solid ${s.color}33` }}>
+                {[{label:"Protein",value:pending.protein_g,unit:"g",color:"#6a9e6a"},{label:"Carbs",value:pending.carbs_g,unit:"g",color:"#805d93"},{label:"Fat",value:pending.fat_g,unit:"g",color:"#e8457a"}].map(s=>(
+                  <div key={s.label} style={{ textAlign:"center", padding:"4px 10px", background:"#f9f9f9", borderRadius:8, border:`1.5px solid ${s.color}33` }}>
                     <div style={{ fontSize:15, fontWeight:700, color:s.color }}>{s.value}g</div>
-                    <div style={{ fontSize:10, color:"#6a5a4a" }}>{s.label}</div>
+                    <div style={{ fontSize:10, color:"#666666" }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -1023,10 +1026,10 @@ Be realistic. UK measurements and British English.`
           {/* Food macros */}
           {pending && !pending._multiSummary && (
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-              {[{label:"Calories",value:pending.calories,unit:"kcal",color:"#c8955a"},{label:"Protein",value:pending.protein_g,unit:"g",color:"#6a9e6a"},{label:"Carbs",value:pending.carbs_g,unit:"g",color:"#7a9ec8"},{label:"Fat",value:pending.fat_g,unit:"g",color:"#c87a6a"}].map(s=>(
-                <div key={s.label} style={{ flex:"1 1 70px", textAlign:"center", padding:"8px 6px", background:"#faf7f3", borderRadius:10, border:`1.5px solid ${s.color}33` }}>
+              {[{label:"Calories",value:pending.calories,unit:"kcal",color:"#9ebd6e"},{label:"Protein",value:pending.protein_g,unit:"g",color:"#6a9e6a"},{label:"Carbs",value:pending.carbs_g,unit:"g",color:"#805d93"},{label:"Fat",value:pending.fat_g,unit:"g",color:"#e8457a"}].map(s=>(
+                <div key={s.label} style={{ flex:"1 1 70px", textAlign:"center", padding:"8px 6px", background:"#f9f9f9", borderRadius:10, border:`1.5px solid ${s.color}33` }}>
                   <div style={{ fontSize:18, fontWeight:700, color:s.color }}>{s.value}</div>
-                  <div style={{ fontSize:10, color:"#6a5a4a", letterSpacing:0.5 }}>{s.unit} {s.label}</div>
+                  <div style={{ fontSize:10, color:"#666666", letterSpacing:0.5 }}>{s.unit} {s.label}</div>
                 </div>
               ))}
             </div>
@@ -1034,11 +1037,11 @@ Be realistic. UK measurements and British English.`
           )}
           {/* Drink units */}
           {pendingDrink && (
-            <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"8px 14px", background:"#fdf0e0", borderRadius:10, border:"1.5px solid #c8955a33", marginBottom:10 }}>
-              <span style={{ display:"flex", alignItems:"center" }}><Icon name="beer" size={20} color="#c8955a"/></span>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"8px 14px", background:"#f5f5f5", borderRadius:10, border:"1.5px solid #9ebd6e33", marginBottom:10 }}>
+              <span style={{ display:"flex", alignItems:"center" }}><Icon name="beer" size={20} color="#9ebd6e"/></span>
               <div>
-                <div style={{ fontWeight:700, color:"#c8955a", fontSize:16 }}>{pendingDrink.units} units</div>
-                <div style={{ fontSize:11, color:"#8a7a6a" }}>{pendingDrink.drink_type}{pendingDrink.abv ? ` · ${pendingDrink.abv}% ABV` : ""}{pendingDrink.volume_ml ? ` · ${pendingDrink.volume_ml}ml` : ""}</div>
+                <div style={{ fontWeight:700, color:"#9ebd6e", fontSize:16 }}>{pendingDrink.units} units</div>
+                <div style={{ fontSize:11, color:"#888888" }}>{pendingDrink.drink_type}{pendingDrink.abv ? ` · ${pendingDrink.abv}% ABV` : ""}{pendingDrink.volume_ml ? ` · ${pendingDrink.volume_ml}ml` : ""}</div>
               </div>
             </div>
           )}
@@ -1049,13 +1052,13 @@ Be realistic. UK measurements and British English.`
 
       {/* Unified log */}
       {allItems.length > 0 && (
-        <div style={{ marginTop:14, borderTop:"1px solid #e8e0d4", paddingTop:10 }}>
+        <div style={{ marginTop:14, borderTop:"1px solid #efefef", paddingTop:10 }}>
           {/* Older items — hidden in accordion */}
           {allItems.length > 3 && (
             <div style={{ marginBottom:4 }}>
               <button onClick={()=>setShowAllItems(v=>!v)}
-                style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", padding:"6px 0", fontFamily:"inherit", cursor:"pointer", color:"#8a7a6a", fontSize:12, fontWeight:600 }}>
-                <Icon name={showAllItems?"chevup":"chevdown"} size={14} color="#8a7a6a"/>
+                style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", padding:"6px 0", fontFamily:"inherit", cursor:"pointer", color:"#888888", fontSize:12, fontWeight:600 }}>
+                <Icon name={showAllItems?"chevup":"chevdown"} size={14} color="#888888"/>
                 {showAllItems ? "Hide older items" : `Show ${allItems.length - 3} older item${allItems.length - 3 > 1 ? "s" : ""}`}
               </button>
               {showAllItems && allItems.slice(0, allItems.length - 3).map((item, idx) => renderLogItem(item, idx, "older"))}
@@ -1064,14 +1067,14 @@ Be realistic. UK measurements and British English.`
           {/* Always show last 3 */}
           {allItems.slice(-3).map((item, idx) => renderLogItem(item, idx, "recent"))}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:10, marginTop:4 }}>
-            <span style={{ fontSize:13, color:"#8a7a6a" }}>Total</span>
+            <span style={{ fontSize:13, color:"#888888" }}>Total</span>
             <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-              {totalUnits > 0 && <span style={{ fontSize:13, color:"#c8955a", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}><Icon name="beer" size={15} color="#c8955a"/>{totalUnits.toFixed(1)} units</span>}
-              <span style={{ fontSize:18, fontWeight:700, color:"#c8955a" }}>{totalCals} <span style={{ fontSize:12, fontWeight:400, color:"#8a7a6a" }}>kcal</span></span>
+              {totalUnits > 0 && <span style={{ fontSize:13, color:"#9ebd6e", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}><Icon name="beer" size={15} color="#9ebd6e"/>{totalUnits.toFixed(1)} units</span>}
+              <span style={{ fontSize:18, fontWeight:700, color:"#9ebd6e" }}>{totalCals} <span style={{ fontSize:12, fontWeight:400, color:"#888888" }}>kcal</span></span>
             </div>
           </div>
           <button onClick={()=>{ setText(""); setPending(null); setPendingDrink(null); setPreviewSrc(null); }}
-            style={{ width:"100%", marginTop:12, padding:"10px", background:"none", border:"1.5px dashed #d0c4b4", borderRadius:10, color:"#8a7a6a", fontSize:13, fontFamily:"inherit", fontWeight:500, cursor:"pointer" }}>
+            style={{ width:"100%", marginTop:12, padding:"10px", background:"none", border:"1.5px dashed #dddddd", borderRadius:10, color:"#888888", fontSize:13, fontFamily:"inherit", fontWeight:500, cursor:"pointer" }}>
             + Log another item
           </button>
         </div>
@@ -1103,12 +1106,12 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
 
   if (!connected) {
     return (
-      <Section title="FITBIT" accent="#6a7ec8">
-        <div style={{ fontSize:13.5, color:"#6a5a4a", marginBottom:12, lineHeight:1.6 }}>
+      <Section title="FITBIT" accent="#4a86d8">
+        <div style={{ fontSize:13.5, color:"#666666", marginBottom:12, lineHeight:1.6 }}>
           Connect Fitbit to automatically pull your steps, sleep, and heart rate each day.
         </div>
         <button onClick={startAuth}
-          style={{ padding:"10px 24px", background:"#6a7ec8", color:"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"10px 24px", background:"#4a86d8", color:"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
           Connect Fitbit
         </button>
       </Section>
@@ -1135,54 +1138,53 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
     return (
       <div style={{ textAlign:"center" }}>
         <svg width={size} height={size}>
-          <path d={trackD} fill="none" stroke="#e8e0d4" strokeWidth="8" strokeLinecap="round"/>
+          <path d={trackD} fill="none" stroke="#efefef" strokeWidth="8" strokeLinecap="round"/>
           <path d={fillD} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"/>
-          <text x={cx} y={cy-4} textAnchor="middle" fill="#1e1408" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
-          <text x={cx} y={cy+12} textAnchor="middle" fill="#6a5a4a" fontSize={9}>{sublabel}</text>
+          <text x={cx} y={cy-4} textAnchor="middle" fill="#ffffff" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
+          <text x={cx} y={cy+12} textAnchor="middle" fill="#666666" fontSize={9}>{sublabel}</text>
         </svg>
       </div>
     );
   };
 
   return (
-    <Section title="FITBIT" accent="#6a7ec8">
+    <Section title="FITBIT" accent="#4a86d8">
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-        <div style={{ fontSize:11, color:"#8a7a6a" }}>{fetchTime ? `Synced ${fetchTime}` : "Not synced today"}</div>
+        <div style={{ fontSize:11, color:"#888888" }}>{fetchTime ? `Synced ${fetchTime}` : "Not synced today"}</div>
         <button onClick={sync} disabled={syncing}
-          style={{ padding:"6px 14px", background:"#eef0fa", color:"#6a7ec8", border:"1px solid #c0c8e8", borderRadius:20, fontSize:12, fontFamily:"inherit", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
-          <Icon name="refresh" size={13} color="#7a9ec8"/>{syncing ? "Syncing…" : "Sync"}
+          style={{ padding:"6px 14px", background:"#eef4fc", color:"#4a86d8", border:"1px solid #a0b8e8", borderRadius:20, fontSize:12, fontFamily:"inherit", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
+          <Icon name="refresh" size={13} color="#805d93"/>{syncing ? "Syncing…" : "Sync"}
         </button>
       </div>
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginBottom:8 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginBottom:8 }}>{error}</div>}
       {syncing && <div style={{ marginBottom:10 }}><Spinner label="Syncing Fitbit data…" /></div>}
       {f && (
         <div>
           {/* Arc rings row */}
           <div style={{ display:"flex", justifyContent:"space-around", marginBottom:16 }}>
-            <Arc value={f.steps||0} max={10000} color="#6a7ec8" size={88}
+            <Arc value={f.steps||0} max={10000} color="#4a86d8" size={88}
               label={(f.steps||0) >= 1000 ? Math.round((f.steps||0)/100)/10 + "k" : String(f.steps||0)}
               sublabel="STEPS" />
-            {f.sleepMins > 0 && <Arc value={f.sleepMins} max={480} color="#8a7ec8" size={88}
+            {f.sleepMins > 0 && <Arc value={f.sleepMins} max={480} color="#26b5a8" size={88}
               label={fmtMins(f.sleepMins)} sublabel="SLEEP" />}
-            {f.restingHR && <Arc value={f.restingHR} max={100} color="#c87a6a" size={88}
+            {f.restingHR && <Arc value={f.restingHR} max={100} color="#e8457a" size={88}
               label={String(f.restingHR)} sublabel="HR BPM" />}
-            {f.calsBurned > 0 && <Arc value={f.calsBurned} max={2500} color="#c8955a" size={88}
+            {f.calsBurned > 0 && <Arc value={f.calsBurned} max={2500} color="#9ebd6e" size={88}
               label={(f.calsBurned >= 1000 ? Math.round(f.calsBurned/100)/10 + "k" : String(f.calsBurned))}
               sublabel="BURNED" />}
           </div>
-          {/* Sleep breakdown */}
           {f.sleepMins > 0 && (
             <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-              {[["Deep", f.deepMins, "#4a5ea8"], ["REM", f.remMins, "#8a7ec8"], ["Light", f.lightMins, "#aaa0d8"]].map(([label, val, color]) => (
-                <div key={label} style={{ flex:1, padding:"8px 6px", background:"#f5f0e8", borderRadius:10, textAlign:"center", border:"1px solid #e8e0d4" }}>
+              {[["Deep", f.deepMins, "#26b5a8"], ["REM", f.remMins, "#4a86d8"], ["Light", f.lightMins, "#78bfea"]].map(([label, val, color]) => (
+                <div key={label} style={{ flex:1, padding:"8px 6px", background:"#f8f8f8", borderRadius:10, textAlign:"center", border:"1px solid #efefef" }}>
                   <div style={{ fontSize:13, fontWeight:700, color }}>{fmtMins(val)}</div>
-                  <div style={{ fontSize:9, color:"#8a7a6a", marginTop:2, letterSpacing:0.8 }}>{label.toUpperCase()}</div>
+                  <div style={{ fontSize:9, color:"#aaaaaa", marginTop:2, letterSpacing:0.8 }}>{label.toUpperCase()}</div>
                 </div>
               ))}
               {f.activeMin > 0 && (
-                <div style={{ flex:1, padding:"8px 6px", background:"#f5f0e8", borderRadius:10, textAlign:"center", border:"1px solid #e8e0d4" }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#6a9e6a" }}>{f.activeMin}m</div>
-                  <div style={{ fontSize:9, color:"#8a7a6a", marginTop:2, letterSpacing:0.8 }}>ACTIVE</div>
+                <div style={{ flex:1, padding:"8px 6px", background:"#f8f8f8", borderRadius:10, textAlign:"center", border:"1px solid #efefef" }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#f59c38" }}>{f.activeMin}m</div>
+                  <div style={{ fontSize:9, color:"#aaaaaa", marginTop:2, letterSpacing:0.8 }}>ACTIVE</div>
                 </div>
               )}
             </div>
@@ -1190,17 +1192,17 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
           {/* Steps progress bar */}
           <div>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-              <span style={{ fontSize:11, color:"#8a7a6a" }}>Daily step goal</span>
-              <span style={{ fontSize:11, color:"#6a7ec8", fontWeight:600 }}>{((f.steps||0)/10000*100).toFixed(0)}%</span>
+              <span style={{ fontSize:11, color:"#888888" }}>Daily step goal</span>
+              <span style={{ fontSize:11, color:"#4a86d8", fontWeight:600 }}>{((f.steps||0)/10000*100).toFixed(0)}%</span>
             </div>
-            <div style={{ background:"#e8e0d4", borderRadius:6, height:6 }}>
-              <div style={{ width:Math.min(100,(f.steps||0)/10000*100)+"%" , height:"100%", background:"#6a7ec8", borderRadius:6 }}/>
+            <div style={{ background:"#efefef", borderRadius:6, height:6 }}>
+              <div style={{ width:Math.min(100,(f.steps||0)/10000*100)+"%" , height:"100%", background:"#4a86d8", borderRadius:6 }}/>
             </div>
           </div>
         </div>
       )}
       {!f && !syncing && (
-        <div style={{ fontSize:13, color:"#8a7a6a" }}>Tap Sync to pull today's data from Fitbit.</div>
+        <div style={{ fontSize:13, color:"#888888" }}>Tap Sync to pull today's data from Fitbit.</div>
       )}
     </Section>
   );
@@ -1237,29 +1239,29 @@ Give 2-3 sentences: acknowledge how they're feeling and — where relevant — c
   };
   const chatCtx = analysed ? `Mood: ${MOODS.find(m=>m.value===mood)?.label}, Energy: ${ENERGY.find(e=>e.value===energy)?.label}. Notes: "${note}". Feedback: ${feedback}` : null;
   return (
-    <Section title="MOOD & ENERGY" accent="#7a9ec8">
-      <div style={{ fontSize:20, fontWeight:700, color:"#1e1408", marginBottom:14 }}>How are you feeling?</div>
-      <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#7a9e8a", textTransform:"uppercase", marginBottom:8 }}>Mood</div>
+    <Section title="MOOD & ENERGY" accent="#805d93">
+      <div style={{ fontSize:20, fontWeight:700, color:"#111111", marginBottom:14 }}>How are you feeling?</div>
+      <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#4a86d8", textTransform:"uppercase", marginBottom:8 }}>Mood</div>
       <EmojiPicker options={MOODS} value={mood} onChange={v=>{ setMood(v); onUpdate({ mood:v, energy, moodNote:note, moodFeedback:feedback }); setSavedFlash(true); setTimeout(()=>setSavedFlash(false),1500); }} />
       <div style={{ marginTop:14 }}>
-        <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#7a9e8a", textTransform:"uppercase", marginBottom:8 }}>Energy</div>
+        <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#4a86d8", textTransform:"uppercase", marginBottom:8 }}>Energy</div>
         <EmojiPicker options={ENERGY} value={energy} onChange={v=>{ setEnergy(v); onUpdate({ mood, energy:v, moodNote:note, moodFeedback:feedback }); setSavedFlash(true); setTimeout(()=>setSavedFlash(false),1500); }} />
       </div>
       <textarea placeholder="Any notes? Headache, brain fog, stressed, anxious, feeling great…" value={note}
         onChange={e=>setNote(e.target.value)} onBlur={()=>save({ moodNote:note })}
-        style={{ marginTop:12, width:"100%", minHeight:52, padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", resize:"none", outline:"none", lineHeight:1.5 }} />
+        style={{ marginTop:12, width:"100%", minHeight:52, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"none", outline:"none", lineHeight:1.5 }} />
       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, flexWrap:"wrap" }}>
         <button onClick={()=>save({ moodNote:note })} disabled={!mood&&!energy}
-          style={{ padding:"10px 24px", background:(!mood&&!energy)?"#d8d0c4":"#7a9ec8", color:(!mood&&!energy)?"#a89888":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
+          style={{ padding:"10px 24px", background:(!mood&&!energy)?"#e0e0e0":"#805d93", color:(!mood&&!energy)?"#aaaaaa":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
           Save
         </button>
         {savedFlash && <span style={{ fontSize:12, color:"#6a9e6a", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}><Icon name="check" size={15} color="#6a9e6a"/>Saved</span>}
         <button onClick={analyse} disabled={(!mood&&!energy)||loading}
-          style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #e8e0d4", color:(!mood&&!energy)||loading?"#b0a090":"#1e1408", borderRadius:12, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer", opacity:(!mood&&!energy)||loading?0.5:1, marginTop:4 }}>
+          style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #efefef", color:(!mood&&!energy)||loading?"#aaaaaa":"#111111", borderRadius:12, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer", opacity:(!mood&&!energy)||loading?0.5:1, marginTop:4 }}>
           {loading ? "Thinking…" : "✦ Get AI feedback"}
         </button>
       </div>
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
       {feedback && <AIBubble text={feedback} />}
       {analysed && <ChatWidget systemPrompt={`You are a supportive wellness coach. Today: ${dayContext}. Answer questions about wellbeing, connecting to food, sleep, steps, or exercise data where relevant. Warm, practical, concise. British English.`} contextSummary={chatCtx} placeholder="e.g. Why might I feel this way? Could it be my sleep?" />}
@@ -1294,22 +1296,22 @@ Give 3-4 sentences: acknowledge what they did, estimate calories burned, and com
   };
   const chatCtx = analysed ? `Exercise: "${exercise}". Feedback: ${feedback}` : null;
   return (
-    <Section title="EXERCISE" accent="#6a9e6a">
+    <Section title="EXERCISE" accent="#f59c38">
       <textarea placeholder="e.g. 30 min run, 20 min yoga, 45 min weights…" value={exercise}
         onChange={e=>setExercise(e.target.value)} onBlur={()=>save({ exercise })}
-        style={{ width:"100%", minHeight:56, padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", resize:"none", outline:"none", lineHeight:1.5 }} />
+        style={{ width:"100%", minHeight:56, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"none", outline:"none", lineHeight:1.5 }} />
       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, flexWrap:"wrap" }}>
         <button onClick={()=>save({ exercise })} disabled={!exercise.trim()}
-          style={{ padding:"10px 24px", background:!exercise.trim()?"#d8d0c4":"#6a9e6a", color:!exercise.trim()?"#a89888":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
+          style={{ padding:"10px 24px", background:!exercise.trim()?"#e0e0e0":"#f59c38", color:!exercise.trim()?"#aaaaaa":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
           Save
         </button>
         {savedFlash && <span style={{ fontSize:12, color:"#6a9e6a", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}><Icon name="check" size={15} color="#6a9e6a"/>Saved</span>}
         <button onClick={analyse} disabled={!exercise.trim()||loading}
-          style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #e8e0d4", color:!exercise.trim()||loading?"#b0a090":"#1e1408", borderRadius:12, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer", opacity:!exercise.trim()||loading?0.5:1, marginTop:4 }}>
+          style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #efefef", color:!exercise.trim()||loading?"#aaaaaa":"#111111", borderRadius:12, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer", opacity:!exercise.trim()||loading?0.5:1, marginTop:4 }}>
           {loading ? "Thinking…" : "✦ Get AI feedback"}
         </button>
       </div>
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
       {feedback && <AIBubble text={feedback} />}
       {analysed && <ChatWidget systemPrompt={`You are a friendly fitness coach. Today: ${dayContext}. Answer questions about the workout, recovery, or how exercise relates to food/mood/energy/Fitbit data. British English.`} contextSummary={chatCtx} placeholder="e.g. Was that enough? Should I rest tomorrow?" />}
@@ -1383,19 +1385,19 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
     setBanner(computeBanner(weight));
   };
 
-  const bc = { good:{ bg:"#edfaf2", border:"#6a9e6a", text:"#2d6a3f" }, bad:{ bg:"#fdf0ee", border:"#c87a6a", text:"#8a2a1a" }, neutral:{ bg:"#f5f2ee", border:"#d0c8be", text:"#6a5a4a" } };
+  const bc = { good:{ bg:"#edfaf2", border:"#6a9e6a", text:"#2d6a3f" }, bad:{ bg:"#fff5f7", border:"#e8457a", text:"#801030" }, neutral:{ bg:"#f5f5f5", border:"#dddddd", text:"#666666" } };
 
   return (
-    <Section title="WEIGHT" accent="#8a7a6a">
+    <Section title="WEIGHT" accent="#a89aaa">
       <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
         <input type="number" step="0.1" placeholder="0.0" value={weight}
           onChange={e=>setWeight(e.target.value)}
-          style={{ width:120, padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:24, fontWeight:700, color:"#1e1408", outline:"none", textAlign:"center" }} />
-        <span style={{ color:"#8a7a6a", fontSize:16, fontWeight:500 }}>kg</span>
+          style={{ width:120, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:24, fontWeight:700, color:"#111111", outline:"none", textAlign:"center" }} />
+        <span style={{ color:"#888888", fontSize:16, fontWeight:500 }}>kg</span>
       </div>
       <div style={{ marginTop:10 }}>
         <button onClick={save} disabled={!weight}
-          style={{ padding:"10px 24px", background:!weight?"#d8d0c4":"#8a7a6a", color:!weight?"#a89888":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
+          style={{ padding:"10px 24px", background:!weight?"#e0e0e0":"#a89aaa", color:!weight?"#aaaaaa":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
           Save
         </button>
       </div>
@@ -1404,7 +1406,7 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
           {banner.msg}
         </div>
       ); })()}
-      <div style={{ marginTop:8, fontSize:11, color:"#8a7a6a" }}>Detailed trend analysis in Insights → Weight Trend</div>
+      <div style={{ marginTop:8, fontSize:11, color:"#888888" }}>Detailed trend analysis in Insights → Weight Trend</div>
     </Section>
   );
 }
@@ -1413,10 +1415,10 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
 function bpCategory(s, d) {
   if (!s || !d) return null;
   const sv = Number(s), dv = Number(d);
-  if (sv > 180 || dv > 120) return { label:"Hypertensive Crisis", short:"Crisis",    bg:"#fce8e8", border:"#b02020", text:"#7a0000", dot:"#b02020" };
-  if (sv >= 140 || dv >= 90) return { label:"High — Stage 2",     short:"Stage 2",   bg:"#fdf0ee", border:"#c87a6a", text:"#8a2a1a", dot:"#c87a6a" };
-  if (sv >= 130 || dv >= 80) return { label:"High — Stage 1",     short:"Stage 1",   bg:"#fdf5ec", border:"#c8955a", text:"#7a4010", dot:"#c8955a" };
-  if (sv >= 120 && dv < 80)  return { label:"Elevated",           short:"Elevated",  bg:"#fffbe8", border:"#c8b030", text:"#6a5000", dot:"#c8b030" };
+  if (sv > 180 || dv > 120) return { label:"Hypertensive Crisis", short:"Crisis",    bg:"#fce8e8", border:"#b02020", text:"#700020", dot:"#b02020" };
+  if (sv >= 140 || dv >= 90) return { label:"High — Stage 2",     short:"Stage 2",   bg:"#fff5f7", border:"#e8457a", text:"#801030", dot:"#e8457a" };
+  if (sv >= 130 || dv >= 80) return { label:"High — Stage 1",     short:"Stage 1",   bg:"#fff8f0", border:"#9ebd6e", text:"#888888", dot:"#9ebd6e" };
+  if (sv >= 120 && dv < 80)  return { label:"Elevated",           short:"Elevated",  bg:"#fffbe0", border:"#c8a000", text:"#5a5000", dot:"#c8a000" };
   return                             { label:"Normal",             short:"Normal",    bg:"#edfaf2", border:"#6a9e6a", text:"#2d6a3f", dot:"#6a9e6a" };
 }
 
@@ -1445,16 +1447,16 @@ function BPSection({ entry, onUpdate }) {
   const livecat = bpCategory(systolic, diastolic);
 
   return (
-    <Section title="BLOOD PRESSURE" accent="#c87a6a">
+    <Section title="BLOOD PRESSURE" accent="#e8457a">
       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
         {[["Systolic","120",systolic,setSystolic],["Diastolic","80",diastolic,setDiastolic],["Pulse","72",pulse,setPulse]].map(([label,ph,val,set])=>(
           <div key={label} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
             <input type="number" placeholder={ph} value={val} onChange={e=>set(e.target.value)}
-              style={{ width:72, padding:"10px 8px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:20, fontWeight:700, color:"#1e1408", outline:"none", textAlign:"center" }} />
-            <span style={{ fontSize:10, color:"#8a7a6a", marginTop:4, fontWeight:500, letterSpacing:0.5 }}>{label}{label==="Pulse"?" (opt.)":""}</span>
+              style={{ width:72, padding:"10px 8px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:20, fontWeight:700, color:"#111111", outline:"none", textAlign:"center" }} />
+            <span style={{ fontSize:10, color:"#888888", marginTop:4, fontWeight:500, letterSpacing:0.5 }}>{label}{label==="Pulse"?" (opt.)":""}</span>
           </div>
         ))}
-        <span style={{ fontSize:11, color:"#8a7a6a", alignSelf:"flex-end", marginBottom:18 }}>mmHg</span>
+        <span style={{ fontSize:11, color:"#888888", alignSelf:"flex-end", marginBottom:18 }}>mmHg</span>
       </div>
       {/* Live category pill while typing */}
       {livecat && !banner && (
@@ -1465,10 +1467,10 @@ function BPSection({ entry, onUpdate }) {
       )}
       <textarea placeholder="Any notes? Time of day, how you were feeling, medication taken…" value={note}
         onChange={e=>setNote(e.target.value)}
-        style={{ width:"100%", minHeight:46, padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", resize:"none", outline:"none", lineHeight:1.5 }} />
+        style={{ width:"100%", minHeight:46, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"none", outline:"none", lineHeight:1.5 }} />
       <div style={{ marginTop:10 }}>
         <button onClick={save} disabled={!systolic||!diastolic}
-          style={{ padding:"10px 24px", background:(!systolic||!diastolic)?"#d8d0c4":"#c87a6a", color:(!systolic||!diastolic)?"#a89888":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
+          style={{ padding:"10px 24px", background:(!systolic||!diastolic)?"#e0e0e0":"#e8457a", color:(!systolic||!diastolic)?"#aaaaaa":"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, cursor:"pointer" }}>
           Save
         </button>
       </div>
@@ -1478,7 +1480,7 @@ function BPSection({ entry, onUpdate }) {
           <span>{banner.msg}</span>
         </div>
       )}
-      <div style={{ marginTop:8, fontSize:11, color:"#8a7a6a" }}>Detailed trend analysis in Insights → Blood Pressure</div>
+      <div style={{ marginTop:8, fontSize:11, color:"#888888" }}>Detailed trend analysis in Insights → Blood Pressure</div>
     </Section>
   );
 }
@@ -1512,16 +1514,16 @@ function DraggableLayout({ storageKey, defaultOrder, editMode, renderSection }) 
               <div style={{ position:"absolute", top:10, right:10, zIndex:20, display:"flex", flexDirection:"row", gap:6 }}>
                 {[[-1, false], [1, true]].map(([dir, flip]) => {
                   const disabled = dir === -1 ? idx === 0 : idx === order.length - 1;
-                  const col = disabled ? "#d0c0a8" : "#4a7ec8";
+                  const col = disabled ? "#dddddd" : "#3a76d8";
                   return (
                     <button key={dir} onClick={()=>move(idx, dir)} disabled={disabled}
                       style={{
                         width:34, height:34, borderRadius:"50%",
-                        background: disabled ? "#f0eae0" : "#fff",
+                        background: disabled ? "#f5f5f5" : "#fff",
                         border: `2.5px solid ${col}`,
                         cursor: disabled ? "default" : "pointer",
                         display:"flex", alignItems:"center", justifyContent:"center",
-                        boxShadow: disabled ? "none" : "0 2px 8px #4a7ec833",
+                        boxShadow: disabled ? "none" : "0 2px 8px #3a76d833",
                         transition:"all 0.15s", padding:0
                       }}>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
@@ -1565,12 +1567,12 @@ function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected }) {
     <div>
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:editLayout?12:0 }}>
         <button onClick={()=>setEditLayout(v=>!v)}
-          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #e8e0d4", color:editLayout?"#fff":"#8a7a6a", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom: editLayout?0:12 }}>
+          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #efefef", color:editLayout?"#fff":"#888888", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom: editLayout?0:12 }}>
           {editLayout ? "✓ Done" : "✎ Edit layout"}
         </button>
       </div>
       {editLayout && (
-        <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:12, textAlign:"center" }}>
+        <div style={{ fontSize:12, color:"#888888", marginBottom:12, textAlign:"center" }}>
           Use the ↑↓ buttons to reorder sections
         </div>
       )}
@@ -1605,7 +1607,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
   };
 
   return (
-    <Section title="WEIGHT TREND" accent="#6a9e6a">
+    <Section title="WEIGHT TREND" accent="#a89aaa">
       {(() => {
         const W = Math.max(weightData.length*52, 300);
         const H = 130, padT = 14, chartH = 80;
@@ -1613,7 +1615,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
         const pts = weightData.map((d,i) => `${i*52+26},${yFor(d.w)}`).join(" ");
         const areaBottom = `${(weightData.length-1)*52+26},${padT+chartH} 26,${padT+chartH}`;
         const trend = weightData.length >= 2 ? (weightData[weightData.length-1].w - weightData[0].w).toFixed(1) : null;
-        const trendColor = trend === null ? "#8a7a6a" : Number(trend) < -0.3 ? "#6a9e6a" : Number(trend) > 0.3 ? "#c87a6a" : "#8a7a6a";
+        const trendColor = trend === null ? "#888888" : Number(trend) < -0.3 ? "#6a9e6a" : Number(trend) > 0.3 ? "#e8457a" : "#888888";
         return (
           <>
             {trend !== null && (
@@ -1621,7 +1623,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                 <span style={{ fontSize:26, fontWeight:800, color:trendColor }}>
                   {Number(trend) > 0 ? "+" : ""}{trend} kg
                 </span>
-                <span style={{ fontSize:12, color:"#8a7a6a" }}>over this period</span>
+                <span style={{ fontSize:12, color:"#888888" }}>over this period</span>
               </div>
             )}
             <ScrollRight>
@@ -1634,7 +1636,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                 </defs>
                 {[minW, (minW+maxW)/2, maxW].map((v,i) => {
                   const y = yFor(v);
-                  return <g key={i}><line x1={0} x2={W} y1={y} y2={y} stroke="#f0ebe2"/><text x={2} y={y-2} fontSize={8} fill="#8a7a6a">{v.toFixed(1)}</text></g>;
+                  return <g key={i}><line x1={0} x2={W} y1={y} y2={y} stroke="#f5f5f5"/><text x={2} y={y-2} fontSize={8} fill="#888888">{v.toFixed(1)}</text></g>;
                 })}
                 <polygon points={pts + " " + areaBottom} fill="url(#wtGrad)"/>
                 <polyline points={pts} fill="none" stroke={trendColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
@@ -1642,7 +1644,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                   <g key={i}>
                     <circle cx={i*52+26} cy={yFor(d.w)} r={4} fill={trendColor}/>
                     <text x={i*52+26} y={yFor(d.w)-8} textAnchor="middle" fontSize={9} fontWeight="600" fill={trendColor}>{d.w}</text>
-                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
                   </g>
                 ))}
               </svg>
@@ -1652,11 +1654,11 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
       })()}
       <div style={{ marginTop:12 }}>
         <button onClick={analyse} disabled={loading}
-          style={{ padding:"8px 18px", background:"linear-gradient(135deg,#a07850,#7a5830)", color:"#fff", border:"none", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"8px 18px", background:"linear-gradient(135deg,#7aA050,#5a8030)", color:"#fff", border:"none", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
           {loading ? "Analysing…" : "✦ Analyse weight trend"}
         </button>
         {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
-        {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+        {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
         {insight && <AIBubble text={insight} />}
         {analysed && <ChatWidget systemPrompt="You are a supportive health coach discussing a user's weight trend. Answer follow-up questions, give practical advice. Non-judgmental. British English." contextSummary={`Weight trend analysis: ${insight}`} placeholder="e.g. What might be causing the fluctuations?" />}
       </div>
@@ -1717,43 +1719,43 @@ Be direct and specific. British English. 4-5 sentences total.`
   const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
 
   return (
-    <Section title="BLOOD PRESSURE" accent="#c87a6a">
+    <Section title="BLOOD PRESSURE" accent="#e8457a">
       <ScrollRight>
         <svg width={W} height={H}>
-          {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"rgba(200,122,106,0.5)":"#f0ebe2"} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"#8a7a6a"}>{v}</text></g>; })}
-          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#c87a6a" strokeLinejoin="round"/>
-          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#7a9ec8" strokeLinejoin="round" strokeDasharray="4 2"/>
+          {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"rgba(200,122,106,0.5)":"#f5f5f5"} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#e8457a":"#888888"}>{v}</text></g>; })}
+          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#e8457a" strokeLinejoin="round"/>
+          <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#805d93" strokeLinejoin="round" strokeDasharray="4 2"/>
           {bpData.map((d,i)=>{
             const cat = bpCategory(d.sys, d.dia);
             return (<g key={i}>
-              <circle cx={i*60+30} cy={yFor(d.sys)} r={5} fill={cat?.dot||"#c87a6a"}/>
-              <circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#7a9ec8"/>
-              <text x={i*60+30} y={yFor(d.sys)-7} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text>
-              <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text>
-              {d.pulse && <text x={i*60+30} y={yFor(d.dia)+24} textAnchor="middle" fontSize={7} fill="#8a7a6a">♥{d.pulse}</text>}
-              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+              <circle cx={i*60+30} cy={yFor(d.sys)} r={5} fill={cat?.dot||"#e8457a"}/>
+              <circle cx={i*60+30} cy={yFor(d.dia)} r={4} fill="#805d93"/>
+              <text x={i*60+30} y={yFor(d.sys)-7} textAnchor="middle" fontSize={8} fill="#e8457a">{d.sys}</text>
+              <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#805d93">{d.dia}</text>
+              {d.pulse && <text x={i*60+30} y={yFor(d.dia)+24} textAnchor="middle" fontSize={7} fill="#888888">♥{d.pulse}</text>}
+              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
             </g>);
           })}
         </svg>
       </ScrollRight>
       <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12, flexWrap:"wrap" }}>
-        <span style={{color:"#c87a6a", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#c87a6a",borderRadius:2,display:"inline-block"}}/>Systolic</span>
-        <span style={{color:"#7a9ec8", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#7a9ec8",borderRadius:2,display:"inline-block",opacity:0.7}}/>Diastolic</span>
-        <span style={{color:"#8a7a6a"}}>♥ Pulse</span>
-        <span style={{color:"#c87a6a", fontSize:11, opacity:0.6}}>· 140/90 threshold</span>
+        <span style={{color:"#e8457a", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#e8457a",borderRadius:2,display:"inline-block"}}/>Systolic</span>
+        <span style={{color:"#805d93", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#805d93",borderRadius:2,display:"inline-block",opacity:0.7}}/>Diastolic</span>
+        <span style={{color:"#888888"}}>♥ Pulse</span>
+        <span style={{color:"#e8457a", fontSize:11, opacity:0.6}}>· 140/90 threshold</span>
       </div>
       <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
         <button onClick={analyse} disabled={loading}
-          style={{ padding:"8px 18px", background:"linear-gradient(135deg,#c87a6a,#a05040)", color:"#fff", border:"none", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"8px 18px", background:"#e8457a", color:"#fff", border:"none", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
           {loading ? "Analysing…" : "✦ Analyse BP trend"}
         </button>
         <button onClick={copyForGP}
-          style={{ padding:"8px 18px", background:"none", border:"1.5px solid #c87a6a", color:"#c87a6a", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"8px 18px", background:"none", border:"1.5px solid #e8457a", color:"#e8457a", borderRadius:10, fontSize:13, fontFamily:"inherit", fontWeight:600 }}>
           {copied ? "Copied ✓" : "Copy readings"}
         </button>
       </div>
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
-      {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
       {insight && <AIBubble text={insight} />}
       {analysed && <ChatWidget systemPrompt="You are a health coach discussing blood pressure trends and lifestyle factors. Give practical, specific advice. British English." contextSummary={`BP trend analysis: ${insight}`} placeholder="e.g. Which days look worst? What should I change first?" />}
     </Section>
@@ -1816,14 +1818,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
     setLoading(false);
   };
 
-  if (days.length < 2) return <div style={{ textAlign:"center", padding:40, color:"#8a7a6a", fontSize:15 }}>Log at least 2 days to unlock insights</div>;
+  if (days.length < 2) return <div style={{ textAlign:"center", padding:40, color:"#111111", fontSize:15 }}>Log at least 2 days to unlock insights</div>;
 
   const INSIGHTS_DEFAULT = ['mood_energy','calories','steps','weight','alcohol','bp','ai'];
 
   const renderSection = (id) => {
     switch(id) {
       case 'mood_energy': return (
-        <Section title="MOOD & ENERGY" accent="#c8955a">
+        <Section title="MOOD & ENERGY" accent="#805d93">
           {(() => {
             const W = Math.max(moodData.length * 52, 300);
             const H = 130, padT = 10, chartH = 90;
@@ -1837,24 +1839,24 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                 <svg width={W} height={H+14}>
                   <defs>
                     <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#c8955a" stopOpacity="0.15"/>
-                      <stop offset="100%" stopColor="#c8955a" stopOpacity="0"/>
+                      <stop offset="0%" stopColor="#805d93" stopOpacity="0.15"/>
+                      <stop offset="100%" stopColor="#805d93" stopOpacity="0"/>
                     </linearGradient>
                     <linearGradient id="engGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7a9ec8" stopOpacity="0.12"/>
-                      <stop offset="100%" stopColor="#7a9ec8" stopOpacity="0"/>
+                      <stop offset="0%" stopColor="#26b5a8" stopOpacity="0.12"/>
+                      <stop offset="100%" stopColor="#805d93" stopOpacity="0"/>
                     </linearGradient>
                   </defs>
-                  {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={W} y1={yFor(v)} y2={yFor(v)} stroke="#f0ebe2"/>)}
+                  {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={W} y1={yFor(v)} y2={yFor(v)} stroke="#f5f5f5"/>)}
                   <polygon points={moodArea} fill="url(#moodGrad)"/>
                   <polygon points={engArea}  fill="url(#engGrad)"/>
-                  <polyline points={moodPts} fill="none" stroke="#c8955a" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
-                  <polyline points={engPts}  fill="none" stroke="#7a9ec8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5 3"/>
+                  <polyline points={moodPts} fill="none" stroke="#805d93" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+                  <polyline points={engPts}  fill="none" stroke="#26b5a8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5 3"/>
                   {moodData.map((d,i)=>(
                     <g key={i}>
-                      <circle cx={i*52+26} cy={yFor(d.mood||1)} r={4} fill="#c8955a"/>
-                      <circle cx={i*52+26} cy={yFor(d.energy||1)} r={3} fill="#7a9ec8"/>
-                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+                      <circle cx={i*52+26} cy={yFor(d.mood||1)} r={4} fill="#805d93"/>
+                      <circle cx={i*52+26} cy={yFor(d.energy||1)} r={3} fill="#26b5a8"/>
+                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
                     </g>
                   ))}
                 </svg>
@@ -1862,8 +1864,8 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             );
           })()}
           <div style={{ display:"flex", gap:16, marginTop:8, fontSize:11 }}>
-            <span style={{color:"#c8955a", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#c8955a",borderRadius:2,display:"inline-block"}}/>Mood</span>
-            <span style={{color:"#7a9ec8", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#7a9ec8",borderRadius:2,display:"inline-block"}}/>Energy</span>
+            <span style={{color:"#805d93", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#805d93",borderRadius:2,display:"inline-block"}}/>Mood</span>
+            <span style={{color:"#26b5a8", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#26b5a8",borderRadius:2,display:"inline-block"}}/>Energy</span>
           </div>
         </Section>
       );
@@ -1871,23 +1873,23 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         const avgCals = Math.round(calData.filter(d=>d.cals>0).reduce((s,d)=>s+d.cals,0) / calData.filter(d=>d.cals>0).length);
         const avgY = 90 - (avgCals/maxCals)*80;
         return (
-          <Section title="DAILY CALORIES" accent="#c8955a">
+          <Section title="DAILY CALORIES" accent="#9ebd6e">
             {(() => {
               const W = Math.max(calData.length*52, 300);
               return (
                 <ScrollRight>
                   <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={avgY} y2={avgY} stroke="#c8955a44" strokeDasharray="4 3"/>
-                    <text x={4} y={avgY-3} fontSize={8} fill="#8a7a6a">avg {avgCals}</text>
+                    <line x1={0} x2={W} y1={avgY} y2={avgY} stroke="#9ebd6e44" strokeDasharray="4 3"/>
+                    <text x={4} y={avgY-3} fontSize={8} fill="#888888">avg {avgCals}</text>
                     {calData.map((d,i)=>{
                       const h=(d.cals/maxCals)*80;
                       const over = d.cals > 2500;
                       return (
                         <g key={i}>
                           <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5}
-                            fill={over ? "#c87a6a" : "#c8955a"} opacity={d.cals ? 1 : 0.2}/>
-                          {d.cals > 0 && <text x={i*52+26} y={Math.max(88-h, 14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={over?"#c87a6a":"#c8955a"}>{d.cals}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+                            fill={over ? "#e8457a" : "#9ebd6e"} opacity={d.cals ? 1 : 0.2}/>
+                          {d.cals > 0 && <text x={i*52+26} y={Math.max(88-h, 14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={over?"#e8457a":"#9ebd6e"}>{d.cals}</text>}
+                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
                         </g>
                       );
                     })}
@@ -1895,31 +1897,31 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                 </ScrollRight>
               );
             })()}
-            <div style={{ fontSize:11, color:"#8a7a6a", marginTop:4 }}>
+            <div style={{ fontSize:11, color:"#888888", marginTop:4 }}>
               Red = over 2,500 kcal · Dashed = your average ({avgCals} kcal)
             </div>
           </Section>
         );
       })() : null;
       case 'steps': return stepsData.length >= 2 ? (
-        <Section title="DAILY STEPS" accent="#6a7ec8">
+        <Section title="DAILY STEPS" accent="#4a86d8">
           {(() => {
             const W = Math.max(stepsData.length*52, 300);
             const goalY = 90 - (10000/maxSteps)*80;
             return (
               <ScrollRight>
                 <svg width={W} height={130}>
-                  <line x1={0} x2={W} y1={goalY} y2={goalY} stroke="#6a7ec844" strokeDasharray="4 3"/>
-                  <text x={4} y={goalY-3} fontSize={8} fill="#8a7a6a">10k goal</text>
+                  <line x1={0} x2={W} y1={goalY} y2={goalY} stroke="#4a86d844" strokeDasharray="4 3"/>
+                  <text x={4} y={goalY-3} fontSize={8} fill="#888888">10k goal</text>
                   {stepsData.map((d,i)=>{
                     const h=(d.s/maxSteps)*80;
                     const met = d.s >= 10000;
                     const label = d.s >= 1000 ? Math.round(d.s/100)/10 + "k" : String(d.s);
                     return (
                       <g key={i}>
-                        <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5} fill={met?"#6a9e6a":"#6a7ec8"}/>
-                        <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={met?"#6a9e6a":"#6a7ec8"}>{label}</text>
-                        <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+                        <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5} fill={met?"#9ebd6e":"#4a86d8"}/>
+                        <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={met?"#9ebd6e":"#4a86d8"}>{label}</text>
+                        <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
                       </g>
                     );
                   })}
@@ -1927,14 +1929,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
               </ScrollRight>
             );
           })()}
-          <div style={{ fontSize:11, color:"#8a7a6a", marginTop:4 }}>Green = 10k goal reached</div>
+          <div style={{ fontSize:11, color:"#888888", marginTop:4 }}>Green = 10k goal reached</div>
         </Section>
       ) : null;
       case 'weight': return weightData.length >= 2 ? (
         <WeightTrendSection weightData={weightData} minW={minW} maxW={maxW} allEntries={entries} />
       ) : null;
       case 'alcohol': return alcData.some(d=>d.u>0) ? (
-        <Section title="ALCOHOL (UNITS)" accent="#c87a6a">
+        <Section title="ALCOHOL (UNITS)" accent="#f59c38">
           {(() => {
             const W = Math.max(alcData.length*52, 300);
             const guideY = 90-(2/maxAlc)*80;
@@ -1942,21 +1944,21 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             return (
               <>
                 <div style={{ marginBottom:10, display:"flex", alignItems:"baseline", gap:6 }}>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#c87a6a" }}>{totalUnits}</span>
-                  <span style={{ fontSize:12, color:"#8a7a6a" }}>units this period</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#f59c38" }}>{totalUnits}</span>
+                  <span style={{ fontSize:12, color:"#888888" }}>units this period</span>
                 </div>
                 <ScrollRight>
                   <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={guideY} y2={guideY} stroke="#c87a6a44" strokeDasharray="4 3"/>
-                    <text x={4} y={guideY-3} fontSize={8} fill="#8a7a6a">2u/day</text>
+                    <line x1={0} x2={W} y1={guideY} y2={guideY} stroke="#f59c3844" strokeDasharray="4 3"/>
+                    <text x={4} y={guideY-3} fontSize={8} fill="#888888">2u/day</text>
                     {alcData.map((d,i)=>{
                       const h=(d.u/maxAlc)*80;
-                      const col = d.u>6 ? "#c87a6a" : d.u>2 ? "#e0a060" : "#6a9e6a";
+                      const col = d.u>6 ? "#e8457a" : d.u>2 ? "#f59c38" : "#6a9e6a";
                       return (
                         <g key={i}>
                           <rect x={i*52+13} y={90-(h||0)} width={26} height={h||2} rx={5} fill={col} opacity={d.u>0?1:0.15}/>
                           {d.u>0 && <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={col}>{d.u}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
+                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#888888">{d.d.split(",")[0]}</text>
                         </g>
                       );
                     })}
@@ -1964,8 +1966,8 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                 </ScrollRight>
                 <div style={{ display:"flex", gap:12, marginTop:8, fontSize:11 }}>
                   <span style={{color:"#6a9e6a", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#6a9e6a",display:"inline-block"}}/>≤2u</span>
-                  <span style={{color:"#e0a060", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#e0a060",display:"inline-block"}}/>2–6u</span>
-                  <span style={{color:"#c87a6a", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#c87a6a",display:"inline-block"}}/>6u+</span>
+                  <span style={{color:"#f59c38", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#f59c38",display:"inline-block"}}/>2–6u</span>
+                  <span style={{color:"#e8457a", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#e8457a",display:"inline-block"}}/>6u+</span>
                 </div>
               </>
             );
@@ -1976,13 +1978,13 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} />
       ) : null;
       case 'ai': return (
-        <Section title="AI PATTERN ANALYSIS" accent="#c8955a">
+        <Section title="AI PATTERN ANALYSIS" accent="#555555">
           <button onClick={getInsights} disabled={loading}
-            style={{ padding:"10px 22px", background:"#c8955a", color:"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:700 }}>
+            style={{ padding:"10px 22px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:700 }}>
             {loading ? "Analysing…" : "Analyse my patterns"}
           </button>
           {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
-          {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
+          {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
           {insight && <AIBubble text={insight} />}
           {analysed && <ChatWidget systemPrompt="You are a health coach who has analysed multi-day food, mood, energy, exercise, weight, and Fitbit data. Answer follow-up questions and give actionable advice. British English." contextSummary={`Pattern analysis: ${insight}`} placeholder="e.g. What should I focus on first? Why does my energy dip mid-week?" />}
         </Section>
@@ -1995,12 +1997,12 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
     <div>
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:editLayout?12:0 }}>
         <button onClick={()=>setEditLayout(v=>!v)}
-          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #e8e0d4", color:editLayout?"#fff":"#8a7a6a", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom:editLayout?0:12 }}>
+          style={{ background:editLayout?"#6a9e6a":"none", border:editLayout?"none":"1.5px solid #efefef", color:editLayout?"#fff":"#888888", borderRadius:10, padding:"6px 14px", fontSize:12, fontFamily:"inherit", fontWeight:600, marginBottom:editLayout?0:12 }}>
           {editLayout ? "✓ Done" : "✎ Edit layout"}
         </button>
       </div>
       {editLayout && (
-        <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:12, textAlign:"center" }}>
+        <div style={{ fontSize:12, color:"#888888", marginBottom:12, textAlign:"center" }}>
           Use the ↑↓ buttons to reorder sections
         </div>
       )}
@@ -2017,7 +2019,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
 // ── History Tab ───────────────────────────────────────────────────────────────
 function HistoryTab({ entries, onSelectDay }) {
   const days = Object.entries(entries).sort((a,b)=>b[0].localeCompare(a[0]));
-  if (!days.length) return <div style={{ textAlign:"center", padding:40, color:"#8a7a6a" }}>No entries yet. Start logging today!</div>;
+  if (!days.length) return <div style={{ textAlign:"center", padding:40, color:"#888888" }}>No entries yet. Start logging today!</div>;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
       {days.map(([d,e])=>{
@@ -2029,8 +2031,8 @@ function HistoryTab({ entries, onSelectDay }) {
             style={{ textAlign:"left", padding:"14px 16px", borderRadius:14, border:"1px solid rgba(0,0,0,0.07)", background:"#fff", fontFamily:"inherit", width:"100%", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
               <div>
-                <div style={{ fontWeight:700, color:"#1e1408", fontSize:15 }}>{formatDate(d)}</div>
-                <div style={{ fontSize:12, color:"#8a7a6a", marginTop:3 }}>
+                <div style={{ fontWeight:700, color:"#111111", fontSize:15 }}>{formatDate(d)}</div>
+                <div style={{ fontSize:12, color:"#888888", marginTop:3 }}>
                   {(e.food||[]).length} meals{cals?` · ${cals} kcal`:""}
                   {e.fitbit?.steps ? ` · ${e.fitbit.steps.toLocaleString()} steps` : ""}
                   {e.fitbit?.sleepMins ? ` · ${fmtMins(e.fitbit.sleepMins)} sleep` : ""}
@@ -2103,23 +2105,23 @@ function SettingsScreen({ onClose }) {
   const inputCost  = ((sessionUsage.input  / 1e6) * 2.37).toFixed(4);
   const outputCost = ((sessionUsage.output / 1e6) * 11.85).toFixed(4);
 
-  const SectionDivider = () => <div style={{ borderTop:"1px solid #e8e0d4", margin:"20px 0" }} />;
+  const SectionDivider = () => <div style={{ borderTop:"1px solid #efefef", margin:"20px 0" }} />;
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"#f5f0e8", zIndex:100, padding:24, overflowY:"auto" }}>
-      <button onClick={onClose} style={{ background:"none", border:"none", color:"#8a7a6a", fontSize:16, fontFamily:"inherit", marginBottom:20 }}>← Back</button>
+    <div style={{ position:"fixed", inset:0, background:"#f5f5f5", zIndex:100, padding:24, overflowY:"auto" }}>
+      <button onClick={onClose} style={{ background:"none", border:"none", color:"#888888", fontSize:16, fontFamily:"inherit", marginBottom:20 }}>← Back</button>
       <div style={{ fontWeight:700, fontSize:18, marginBottom:20 }}>Settings</div>
 
       {/* API Key */}
       <div>
         <Label>Anthropic API Key</Label>
         <input type="password" value={key} onChange={e=>setKey(e.target.value)}
-          style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"monospace", fontSize:14, color:"#1e1408", outline:"none", marginBottom:10 }} />
+          style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"monospace", fontSize:14, color:"#111111", outline:"none", marginBottom:10 }} />
         <button onClick={()=>{ saveApiKey(key.trim()); setKeySaved(true); setTimeout(()=>setKeySaved(false),2000); }}
-          style={{ padding:"10px 20px", background:"#c8955a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"10px 20px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
           {keySaved ? "Saved ✓" : "Save key"}
         </button>
-        <div style={{ marginTop:10, fontSize:12, color:"#8a7a6a", lineHeight:1.7 }}>
+        <div style={{ marginTop:10, fontSize:12, color:"#888888", lineHeight:1.7 }}>
           Stored only in this browser.<br/>
           {key ? <span style={{ fontFamily:"monospace", color:"#6a9e6a" }}>{key.slice(0,10)}…{key.slice(-4)} ({key.length} chars)</span> : "No key stored."}
         </div>
@@ -2130,26 +2132,26 @@ function SettingsScreen({ onClose }) {
       {/* Usage */}
       <div>
         <Label>Session Usage</Label>
-        <div style={{ background:"#faf7f3", borderRadius:12, padding:"12px 14px", fontSize:13, color:"#1e1408", lineHeight:1.8 }}>
+        <div style={{ background:"#f9f9f9", borderRadius:12, padding:"12px 14px", fontSize:13, color:"#111111", lineHeight:1.8 }}>
           <div style={{ display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"#8a7a6a" }}>Input tokens</span>
-            <span style={{ fontWeight:600 }}>{sessionUsage.input.toLocaleString()} <span style={{ color:"#8a7a6a", fontWeight:400 }}>(~£{inputCost})</span></span>
+            <span style={{ color:"#888888" }}>Input tokens</span>
+            <span style={{ fontWeight:600 }}>{sessionUsage.input.toLocaleString()} <span style={{ color:"#888888", fontWeight:400 }}>(~£{inputCost})</span></span>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"#8a7a6a" }}>Output tokens</span>
-            <span style={{ fontWeight:600 }}>{sessionUsage.output.toLocaleString()} <span style={{ color:"#8a7a6a", fontWeight:400 }}>(~£{outputCost})</span></span>
+            <span style={{ color:"#888888" }}>Output tokens</span>
+            <span style={{ fontWeight:600 }}>{sessionUsage.output.toLocaleString()} <span style={{ color:"#888888", fontWeight:400 }}>(~£{outputCost})</span></span>
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid #e8e0d4", marginTop:6, paddingTop:6 }}>
-            <span style={{ color:"#8a7a6a" }}>Session total</span>
-            <span style={{ fontWeight:700, color:"#c8955a" }}>{estimateCost()}</span>
+          <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid #efefef", marginTop:6, paddingTop:6 }}>
+            <span style={{ color:"#888888" }}>Session total</span>
+            <span style={{ fontWeight:700, color:"#9ebd6e" }}>{estimateCost()}</span>
           </div>
-          <div style={{ fontSize:11, color:"#8a7a6a", marginTop:8 }}>
+          <div style={{ fontSize:11, color:"#888888", marginTop:8 }}>
             Resets when you close or refresh the app.<br/>
             <a href="https://console.anthropic.com/usage" target="_blank" rel="noopener"
-              style={{ color:"#c8955a", textDecoration:"none", fontWeight:600 }}>View full account usage →</a>
+              style={{ color:"#9ebd6e", textDecoration:"none", fontWeight:600 }}>View full account usage →</a>
           </div>
         </div>
-        <div style={{ fontSize:11, color:"#8a7a6a", marginTop:6 }}>Pricing: ~£2.37/M input · ~£11.85/M output (Claude Sonnet 4)</div>
+        <div style={{ fontSize:11, color:"#888888", marginTop:6 }}>Pricing: ~£2.37/M input · ~£11.85/M output (Claude Sonnet 4)</div>
       </div>
 
       <SectionDivider />
@@ -2157,14 +2159,14 @@ function SettingsScreen({ onClose }) {
       {/* Coaching style */}
       <div>
         <Label>Coaching Style</Label>
-        <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:8, lineHeight:1.6 }}>
+        <div style={{ fontSize:12, color:"#888888", marginBottom:8, lineHeight:1.6 }}>
           Tell the AI how you want it to respond. This is added to every prompt across the whole app.
         </div>
         <textarea value={coaching} onChange={e=>setCoaching(e.target.value)}
           placeholder={"e.g. Be encouraging about my weight loss journey. Berate me if I haven't exercised in a few days. Don't be preachy about alcohol — I know. Celebrate small wins enthusiastically."}
-          style={{ width:"100%", minHeight:100, padding:"10px 12px", borderRadius:12, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#1e1408", resize:"vertical", outline:"none", marginBottom:10 }} />
+          style={{ width:"100%", minHeight:100, padding:"10px 12px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"vertical", outline:"none", marginBottom:10 }} />
         <button onClick={()=>{ saveCoachingStyle(coaching); setCoachingSaved(true); setTimeout(()=>setCoachingSaved(false),2000); }}
-          style={{ padding:"10px 20px", background:"#c8955a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"10px 20px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
           {coachingSaved ? "Saved ✓" : "Save style"}
         </button>
         {coaching && <div style={{ marginTop:8, fontSize:11, color:"#6a9e6a" }}>✓ Custom style active</div>}
@@ -2179,12 +2181,12 @@ function SettingsScreen({ onClose }) {
           <div>
             <div style={{ fontSize:13, color:"#6a9e6a", marginBottom:10 }}>✓ Connected</div>
             <button onClick={disconnectFitbit}
-              style={{ padding:"10px 20px", background:"#c87a6a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+              style={{ padding:"10px 20px", background:"#e8457a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
               Disconnect Fitbit
             </button>
           </div>
         ) : (
-          <div style={{ fontSize:13, color:"#8a7a6a" }}>Not connected. Use the Fitbit section on the Log tab to connect.</div>
+          <div style={{ fontSize:13, color:"#888888" }}>Not connected. Use the Fitbit section on the Log tab to connect.</div>
         )}
       </div>
 
@@ -2196,26 +2198,26 @@ function SettingsScreen({ onClose }) {
         {driveConnected ? (
           <div>
             <div style={{ fontSize:13, color:"#6a9e6a", marginBottom:6 }}>✓ Connected</div>
-            {lastBackup && <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:10 }}>Last backup: {new Date(lastBackup).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}</div>}
+            {lastBackup && <div style={{ fontSize:12, color:"#888888", marginBottom:10 }}>Last backup: {new Date(lastBackup).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}</div>}
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <button onClick={manualBackup} disabled={backing}
-                style={{ padding:"10px 20px", background:backing?"#d8d0c4":"#6a7ec8", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+                style={{ padding:"10px 20px", background:backing?"#e0e0e0":"#4a86d8", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
                 {backing ? "Backing up…" : "↑ Back up now"}
               </button>
               <button onClick={()=>{ clearGDriveToken(); window.location.reload(); }}
-                style={{ padding:"10px 20px", background:"#c87a6a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+                style={{ padding:"10px 20px", background:"#e8457a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
                 Disconnect
               </button>
             </div>
             {backupMsg && <div style={{ marginTop:8, fontSize:12, color:"#6a9e6a" }}>{backupMsg}</div>}
-            {backupErr && <div style={{ marginTop:8, fontSize:12, color:"#c87a6a" }}>{backupErr}</div>}
-            <div style={{ marginTop:10, fontSize:12, color:"#8a7a6a", lineHeight:1.6 }}>
+            {backupErr && <div style={{ marginTop:8, fontSize:12, color:"#e8457a" }}>{backupErr}</div>}
+            <div style={{ marginTop:10, fontSize:12, color:"#888888", lineHeight:1.6 }}>
               Saves to a "Nourish Backups" folder in your Google Drive weekly. Backups are JSON files you can restore from if needed.
             </div>
           </div>
         ) : (
           <div>
-            <div style={{ fontSize:13, color:"#8a7a6a", marginBottom:10, lineHeight:1.6 }}>
+            <div style={{ fontSize:13, color:"#888888", marginBottom:10, lineHeight:1.6 }}>
               Connect Google Drive to automatically back up your data weekly.
             </div>
             <button onClick={startGDriveAuth}
@@ -2231,42 +2233,42 @@ function SettingsScreen({ onClose }) {
       {/* Favourites */}
       <div>
         <Label>Favourites</Label>
-        <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:12, lineHeight:1.6 }}>
+        <div style={{ fontSize:12, color:"#888888", marginBottom:12, lineHeight:1.6 }}>
           Saved items appear as a dropdown when you tap the food entry box. You can also save items directly from the log using the ⭐ Save button after analysing.
         </div>
         {/* Existing favourites */}
         {favs.length > 0 ? (
           <div style={{ marginBottom:14, display:"flex", flexDirection:"column", gap:6 }}>
             {favs.map((f,i)=>(
-              <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 12px", background:"#faf7f3", borderRadius:10, border:"1.5px solid #e8e0d4" }}>
+              <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 12px", background:"#f9f9f9", borderRadius:10, border:"1.5px solid #efefef" }}>
                 <div>
-                  <div style={{ fontSize:14, color:"#1e1408" }}>{f.text}</div>
-                  <div style={{ fontSize:11, color:"#8a7a6a", marginTop:2 }}>{f.calories ? f.calories + " kcal" : "— kcal not set"}</div>
+                  <div style={{ fontSize:14, color:"#111111" }}>{f.text}</div>
+                  <div style={{ fontSize:11, color:"#888888", marginTop:2 }}>{f.calories ? f.calories + " kcal" : "— kcal not set"}</div>
                 </div>
                 <button onClick={()=>removeFav(f.text)}
-                  style={{ background:"none", border:"none", color:"#c87a6a", fontSize:18, padding:"4px 8px", cursor:"pointer", lineHeight:1 }}>✕</button>
+                  style={{ background:"none", border:"none", color:"#e8457a", fontSize:18, padding:"4px 8px", cursor:"pointer", lineHeight:1 }}>✕</button>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{ fontSize:13, color:"#8a7a6a", marginBottom:12 }}>No favourites saved yet.</div>
+          <div style={{ fontSize:13, color:"#888888", marginBottom:12 }}>No favourites saved yet.</div>
         )}
         {/* Add new favourite */}
         <div style={{ display:"flex", gap:8, alignItems:"flex-end", flexWrap:"wrap" }}>
           <div style={{ flex:"2 1 160px" }}>
-            <div style={{ fontSize:11, color:"#8a7a6a", marginBottom:4 }}>Name</div>
+            <div style={{ fontSize:11, color:"#888888", marginBottom:4 }}>Name</div>
             <input value={newFavText} onChange={e=>setNewFavText(e.target.value)}
               placeholder="e.g. Cup of tea with milk"
-              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#1e1408", outline:"none" }} />
+              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#111111", outline:"none" }} />
           </div>
           <div style={{ flex:"1 1 70px" }}>
-            <div style={{ fontSize:11, color:"#8a7a6a", marginBottom:4 }}>Kcal (optional)</div>
+            <div style={{ fontSize:11, color:"#888888", marginBottom:4 }}>Kcal (optional)</div>
             <input type="number" value={newFavCals} onChange={e=>setNewFavCals(e.target.value)}
               placeholder="AI estimate"
-              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #e8e0d4", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#1e1408", outline:"none" }} />
+              style={{ width:"100%", padding:"9px 11px", borderRadius:10, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:13, color:"#111111", outline:"none" }} />
           </div>
           <button onClick={addFav} disabled={!newFavText.trim()||favEstimating}
-            style={{ padding:"9px 16px", background:(!newFavText.trim()||favEstimating)?"#d8d0c4":"#c8955a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600, flexShrink:0 }}>
+            style={{ padding:"9px 16px", background:(!newFavText.trim()||favEstimating)?"#e0e0e0":"#9ebd6e", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600, flexShrink:0 }}>
             {favEstimating ? "Estimating…" : "+ Add"}
           </button>
         </div>
@@ -2277,11 +2279,11 @@ function SettingsScreen({ onClose }) {
       {/* Demo data */}
       <div>
         <Label>Demo Data</Label>
-        <div style={{ fontSize:12, color:"#8a7a6a", marginBottom:10, lineHeight:1.6 }}>
+        <div style={{ fontSize:12, color:"#888888", marginBottom:10, lineHeight:1.6 }}>
           7 days of sample data was added so you can preview the graphs. Remove it when you're ready to use the app for real.
         </div>
         <button onClick={()=>{ clearDummyData(); window.location.reload(); }}
-          style={{ padding:"10px 20px", background:"#c87a6a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
+          style={{ padding:"10px 20px", background:"#e8457a", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:600 }}>
           Clear demo data
         </button>
       </div>
@@ -2295,12 +2297,12 @@ function WarningBar({ entries }) {
   const warnings = getMealWarnings(entry);
   if (!warnings.length) return null;
   return (
-    <div style={{ background:"#f5c030", padding:"0 16px" }}>
+    <div style={{ background:"#f0c040", padding:"0 16px" }}>
       {warnings.map((w, i) => (
         <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 0",
-          borderBottom: i < warnings.length-1 ? "1px solid #d4a820" : "none",
-          fontSize:12, color:"#3d2200", fontWeight:500 }}>
-          <span style={{ flexShrink:0, background:"#000", borderRadius:"50%", width:20, height:20, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#f5c842", lineHeight:1 }}>!</span>
+          borderBottom: i < warnings.length-1 ? "1px solid #c8a000" : "none",
+          fontSize:12, color:"#4a3800", fontWeight:500 }}>
+          <span style={{ flexShrink:0, background:"#000", borderRadius:"50%", width:20, height:20, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#f0c040", lineHeight:1 }}>!</span>
           <span>{w.msg}</span>
         </div>
       ))}
@@ -2352,41 +2354,41 @@ function StatsBar({ entries }) {
                cursor: clickable ? "pointer" : "default",
                borderRadius: clickable ? 8 : 0 }}>
       {icon && <div style={{ lineHeight:1, marginBottom:4, display:"flex", justifyContent:"center", opacity:0.7 }}>{icon}</div>}
-      <div style={{ fontSize:18, fontWeight:800, color: warn ? "#e07060" : (valueColor || "#f0e4d0"), lineHeight:1.1 }}>
+      <div style={{ fontSize:18, fontWeight:800, color: warn ? "#e07060" : (valueColor || "#999999"), lineHeight:1.1 }}>
         {value}
         {unit && <span style={{ fontSize:10, fontWeight:400, marginLeft:1, opacity:0.7 }}>{unit}</span>}
       </div>
-      <div style={{ fontSize:9, color: "#5a4a2a", marginTop:4, letterSpacing:0.8, textTransform:"uppercase" }}>
+      <div style={{ fontSize:9, color: "#444444", marginTop:4, letterSpacing:0.8, textTransform:"uppercase" }}>
         {label}{clickable ? " ⇄" : ""}
       </div>
     </div>
   );
 
   return (
-    <div style={{ background:"#1e1408", borderTop:"1px solid rgba(30,20,8,0.15)", padding:"8px 16px 10px" }}>
+    <div style={{ background:"#ffffff", borderTop:"1px solid #efefef", padding:"8px 16px 10px" }}>
       <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:6 }}>
         {[["day","Day"],["week","Week"],["month","Month"]].map(([k,l])=>(
           <button key={k} onClick={()=>setPeriod(k)}
-            style={{ padding:"3px 12px", background:period===k?"#c8955a":"transparent", color:period===k?"#fff":"#6a5a3a", border:"none", borderRadius:20, fontSize:11, fontFamily:"inherit", fontWeight:period===k?700:400, cursor:"pointer" }}>
+            style={{ padding:"3px 12px", background:period===k?"#9ebd6e":"transparent", color:period===k?"#fff":"#555555", border:"none", borderRadius:20, fontSize:11, fontFamily:"inherit", fontWeight:period===k?700:400, cursor:"pointer" }}>
             {l}
           </button>
         ))}
       </div>
-      <div style={{ display:"flex", gap:0, borderTop:"1px solid #3a2510", paddingTop:6 }}>
+      <div style={{ display:"flex", gap:0, borderTop:"1px solid #f0f0f0", paddingTop:6 }}>
 
         {/* Net cals — always visible */}
         <Stat label="NET CALS"
           value={calsIn||calsOut ? (netCals>0?"+":"")+netCals : "—"}
           unit={calsIn||calsOut?"kcal":""}
           warn={netCals>500}
-          icon={<Icon name="scale" size={22} color="#8a7a5a"/>} valueColor={netCals>0?"#c87a6a":netCals<0?"#6a9e6a":"#f0e4d0"} />
+          icon={<Icon name="scale" size={22} color="#888888"/>} valueColor={netCals>0?"#e8457a":netCals<0?"#6a9e6a":"#999999"} />
         <Divider />
         {/* Cals in / out — click to toggle */}
         <Stat
           label={calsMode==="split" ? "CALS IN" : "CALS OUT"}
           value={calsMode==="split" ? (calsIn||"—") : (calsOut||"—")}
           unit={(calsMode==="split" ? calsIn : calsOut) ? "kcal" : ""}
-          icon={<Icon name={calsMode==="split"?"weight":"flame"} size={22} color="#8a7a5a"/>} valueColor="#c8955a"
+          icon={<Icon name={calsMode==="split"?"weight":"flame"} size={22} color="#888888"/>} valueColor="#9ebd6e"
           clickable onClick={()=>setCalsMode(m=>m==="split"?"net":"split")} />
         <Divider />
         {/* Steps / Miles — click to toggle */}
@@ -2395,7 +2397,7 @@ function StatsBar({ entries }) {
           value={stepsMode === "steps"
             ? (steps ? (steps>=1000 ? `${(steps/1000).toFixed(1)}k` : steps) : "—")
             : (miles || "—")}
-          icon={<Icon name="shoe" size={22} color="#8a7a5a"/>} valueColor="#6a7ec8"
+          icon={<Icon name="shoe" size={22} color="#888888"/>} valueColor="#4a86d8"
           clickable
           onClick={()=>setStepsMode(s => s==="steps"?"miles":"steps")}
         />
@@ -2405,7 +2407,7 @@ function StatsBar({ entries }) {
           label={unitsMode === "units" ? "UNITS" : "PINTS"}
           value={unitsMode === "units" ? (units ? units.toFixed(1) : "—") : (pints || "—")}
           warn={warnUnits}
-          icon={<Icon name="beer" size={22} color="#8a7a5a"/>} valueColor={warnUnits?"#e07060":"#c8955a"}
+          icon={<Icon name="beer" size={22} color="#888888"/>} valueColor={warnUnits?"#e8457a":"#f59c38"}
           clickable
           onClick={()=>setUnitsMode(u => u==="units"?"pints":"units")}
         />
@@ -2499,32 +2501,32 @@ function App() {
   const isToday = currentDay === today();
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f5f0e8" }}>
+    <div style={{ minHeight:"100vh", background:"#f5f5f5" }}>
       <div style={{ position:"sticky", top:0, zIndex:10 }}>
       <WarningBar entries={entries} />
-      <div style={{ background:"#1e1408", padding:"16px 16px 0" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+      <div style={{ background:"#ffffff", padding:"14px 16px 0", borderBottom:"1px solid #efefef" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
           <div>
-            <div style={{ fontSize:22, fontWeight:700, color:"#f5e9d6", letterSpacing:0.3 }}>
+            <div style={{ fontSize:22, fontWeight:800, color:"#111111", letterSpacing:-0.3 }}>
               ✦ Nourish
-              {fitbitConnected && <span style={{ fontSize:11, color:"#7a9e8a", fontWeight:500, marginLeft:8, display:"inline-flex", alignItems:"center", gap:3 }}><Icon name="watch" size={14} color="#7a9e8a" /> Fitbit</span>}
+              {fitbitConnected && <span style={{ fontSize:11, color:"#4a86d8", fontWeight:600, marginLeft:8, display:"inline-flex", alignItems:"center", gap:3 }}><Icon name="watch" size={14} color="#4a86d8" /> Fitbit</span>}
             </div>
-            <div style={{ fontSize:12, color:"#8a7a5a", marginTop:2, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ fontSize:12, color:"#999999", marginTop:2, display:"flex", alignItems:"center", gap:8 }}>
               {isToday ? "Today" : formatDate(currentDay)}
               {!isToday && <button onClick={()=>{ setCurrentDay(today()); setTab("log"); }}
-                style={{ fontSize:11, padding:"2px 10px", borderRadius:20, background:"#c8955a", color:"#fff", border:"none", fontFamily:"inherit", fontWeight:600 }}>↩ today</button>}
+                style={{ fontSize:11, padding:"2px 10px", borderRadius:20, background:"#9ebd6e", color:"#fff", border:"none", fontFamily:"inherit", fontWeight:600 }}>↩ today</button>}
             </div>
           </div>
           <button onClick={()=>setShowSettings(true)}
-            style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.18)", color:"#c8a878", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <Icon name="settings" size={20} color="#6a5a3a" />
+            style={{ width:36, height:36, borderRadius:"50%", background:"#f5f5f5", border:"1px solid #efefef", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <Icon name="settings" size={20} color="#888888" />
           </button>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap:0 }}>
           {[["log","Log","log"],["history","History","history"],["insights","Insights","insights"]].map(([t,label,icon])=>(
             <button key={t} onClick={()=>setTab(t)}
-              style={{ padding:"9px 0", background:tab===t?"#f5f0e8":"transparent", color:tab===t?"#1e1408":"#7a6a4a", border:"none", fontFamily:"inherit", fontSize:12, fontWeight:tab===t?700:500, borderRadius:"10px 10px 0 0", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-              <Icon name={icon} size={22} color={tab===t?"#1e1408":"#7a6a4a"} />
+              style={{ padding:"8px 0 0", background:"transparent", color:tab===t?"#111111":"#aaaaaa", border:"none", borderBottom: tab===t?"2.5px solid #9ebd6e":"2.5px solid transparent", fontFamily:"inherit", fontSize:12, fontWeight:tab===t?700:500, flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, paddingBottom:8 }}>
+              <Icon name={icon} size={20} color={tab===t?"#111111":"#bbbbbb"} />
               {label}
             </button>
           ))}
