@@ -20,7 +20,7 @@
   button:active, label:active { opacity: 0.7; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #d8d0c4; border-radius: 3px; }
   input[type=number]::-webkit-inner-spin-button { opacity: 1; }
   select { -webkit-appearance: auto; }
 </style>
@@ -575,13 +575,10 @@ function EmojiPicker({ options, value, onChange }) {
     </div>
   );
 }
-function Section({ title, accent="#c8955a", dark=false, children }) {
-  const bg = dark ? "#1e1408" : "#fff";
-  const border = dark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)";
-  const labelColor = dark ? accent : "#7a9e8a";
+function Section({ title, accent="#c8955a", children }) {
   return (
-    <div style={{ background:bg, borderRadius:16, padding:"16px 18px 20px", boxShadow:"0 1px 8px rgba(0,0,0,0.07)", border }}>
-      <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.2, color:labelColor, textTransform:"uppercase", marginBottom:8 }}>{title}</div>
+    <div style={{ background:"#fff", borderRadius:16, padding:"16px 18px 20px", boxShadow:"0 1px 8px rgba(0,0,0,0.07)", border:"1px solid rgba(0,0,0,0.06)" }}>
+      <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.2, color:"#7a9e8a", textTransform:"uppercase", marginBottom:8 }}>{title}</div>
       {children}
     </div>
   );
@@ -674,6 +671,7 @@ function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayCo
   const [previewSrc, setPreviewSrc] = useState(null);
   const [error, setError] = useState("");
   const [showFavs, setShowFavs] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
   const [selectedFavs, setSelectedFavs] = useState([]); // texts of checked favourites
   const [favourites, setFavourites] = useState(()=>getFavourites());
   const textareaRef = useRef(null);
@@ -867,6 +865,53 @@ Be realistic. UK measurements and British English.`
     ...alcoholItems.map((a,i) => ({ ...a, _type:"drink", _i:i }))
   ].sort((a,b) => (a.time||"").localeCompare(b.time||""));
 
+  const renderLogItem = (item, idx, key) => item._type === "food" ? (
+    <div key={`${key}-f${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
+          <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.text}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
+            <HourSelect value={item.time||"08:00"} onChange={t=>updateFoodTime(item._i,t)} />
+            {item.meal && <span style={{ fontSize:11, color:"#8a7a6a" }}>· {item.meal}</span>}
+          </div>
+          {(item.protein_g||item.carbs_g||item.fat_g) ? (
+            <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
+              {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf5f0", color:"#4a8a5a", fontWeight:600 }}>{item.protein_g}g P</span>}
+              {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf0f8", color:"#4a5a9a", fontWeight:600 }}>{item.carbs_g}g C</span>}
+              {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f8eeec", color:"#8a4a3a", fontWeight:600 }}>{item.fat_g}g F</span>}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{item.calories}</div>
+            <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>kcal</div>
+          </div>
+          <button onClick={()=>removeFood(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div key={`${key}-d${item._i}-${idx}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+        <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
+          <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.drink_type || item.text}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
+            <HourSelect value={item.time||"08:00"} onChange={t=>updateDrinkTime(item._i,t)} />
+            <span style={{ fontSize:11, color:"#8a7a6a", display:"flex", alignItems:"center", gap:3 }}>· <Icon name="beer" size={15} color="#8a7a6a"/> Drink</span>
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{(item.units||0).toFixed(1)}u</div>
+            <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>units</div>
+          </div>
+          <button onClick={()=>removeDrink(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Section title="FOOD & DRINK" accent="#c8955a">
       {totalCals > 0 && <FoodSummaryHeader foodItems={foodItems} totalCals={totalCals} />}
@@ -1002,52 +1047,19 @@ Be realistic. UK measurements and British English.`
       {/* Unified log */}
       {allItems.length > 0 && (
         <div style={{ marginTop:14, borderTop:"1px solid #e8e0d4", paddingTop:10 }}>
-          {allItems.map((item, idx) => item._type === "food" ? (
-            <div key={`f${item._i}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
-                  <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.text}</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
-                    <HourSelect value={item.time||"08:00"} onChange={t=>updateFoodTime(item._i,t)} />
-                    {item.meal && <span style={{ fontSize:11, color:"#8a7a6a" }}>· {item.meal}</span>}
-                  </div>
-                  {(item.protein_g||item.carbs_g||item.fat_g) ? (
-                    <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
-                      {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf5f0", color:"#4a8a5a", fontWeight:600 }}>{item.protein_g}g P</span>}
-                      {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf0f8", color:"#4a5a9a", fontWeight:600 }}>{item.carbs_g}g C</span>}
-                      {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f8eeec", color:"#8a4a3a", fontWeight:600 }}>{item.fat_g}g F</span>}
-                    </div>
-                  ) : null}
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{item.calories}</div>
-                    <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>kcal</div>
-                  </div>
-                  <button onClick={()=>removeFood(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
-                </div>
-              </div>
+          {/* Older items — hidden in accordion */}
+          {allItems.length > 3 && (
+            <div style={{ marginBottom:4 }}>
+              <button onClick={()=>setShowAllItems(v=>!v)}
+                style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", padding:"6px 0", fontFamily:"inherit", cursor:"pointer", color:"#8a7a6a", fontSize:12, fontWeight:600 }}>
+                <Icon name={showAllItems?"chevup":"chevdown"} size={14} color="#8a7a6a"/>
+                {showAllItems ? "Hide older items" : `Show ${allItems.length - 3} older item${allItems.length - 3 > 1 ? "s" : ""}`}
+              </button>
+              {showAllItems && allItems.slice(0, allItems.length - 3).map((item, idx) => renderLogItem(item, idx, "older"))}
             </div>
-          ) : (
-            <div key={`d${item._i}`} style={{ padding:"12px 0", borderBottom:"1px solid #f0ebe2" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
-                  <div style={{ fontWeight:600, color:"#1e1408", fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.drink_type || item.text}</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3 }}>
-                    <HourSelect value={item.time||"08:00"} onChange={t=>updateDrinkTime(item._i,t)} />
-                    <span style={{ fontSize:11, color:"#8a7a6a", display:"flex", alignItems:"center", gap:3 }}>· <Icon name="beer" size={15} color="#8a7a6a"/> Drink</span>
-                  </div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontWeight:700, color:"#c8955a", fontSize:18, lineHeight:1 }}>{item.units}u</div>
-                    <div style={{ fontSize:10, color:"#8a7a6a", marginTop:1 }}>units</div>
-                  </div>
-                  <button onClick={()=>removeDrink(item._i)} style={{ background:"none", border:"none", color:"#c0b0a0", fontSize:18, lineHeight:1, padding:"0 2px", marginTop:2 }}>×</button>
-                </div>
-              </div>
-            </div>
-          ))}
+          )}
+          {/* Always show last 3 */}
+          {allItems.slice(-3).map((item, idx) => renderLogItem(item, idx, "recent"))}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:10, marginTop:4 }}>
             <span style={{ fontSize:13, color:"#8a7a6a" }}>Total</span>
             <div style={{ display:"flex", gap:12, alignItems:"center" }}>
@@ -1120,21 +1132,21 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
     return (
       <div style={{ textAlign:"center" }}>
         <svg width={size} height={size}>
-          <path d={trackD} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" strokeLinecap="round"/>
+          <path d={trackD} fill="none" stroke="#e8e0d4" strokeWidth="8" strokeLinecap="round"/>
           <path d={fillD} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"/>
-          <text x={cx} y={cy-4} textAnchor="middle" fill="#fff" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
-          <text x={cx} y={cy+12} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={9}>{sublabel}</text>
+          <text x={cx} y={cy-4} textAnchor="middle" fill="#1e1408" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
+          <text x={cx} y={cy+12} textAnchor="middle" fill="#6a5a4a" fontSize={9}>{sublabel}</text>
         </svg>
       </div>
     );
   };
 
   return (
-    <Section title="FITBIT" accent="#6a7ec8" dark>
+    <Section title="FITBIT" accent="#6a7ec8">
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-        <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{fetchTime ? `Synced ${fetchTime}` : "Not synced today"}</div>
+        <div style={{ fontSize:11, color:"#8a7a6a" }}>{fetchTime ? `Synced ${fetchTime}` : "Not synced today"}</div>
         <button onClick={sync} disabled={syncing}
-          style={{ padding:"6px 14px", background:"rgba(106,126,200,0.3)", color:"#7a9ec8", border:"1px solid rgba(106,126,200,0.4)", borderRadius:20, fontSize:12, fontFamily:"inherit", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
+          style={{ padding:"6px 14px", background:"#eef0fa", color:"#6a7ec8", border:"1px solid #c0c8e8", borderRadius:20, fontSize:12, fontFamily:"inherit", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
           <Icon name="refresh" size={13} color="#7a9ec8"/>{syncing ? "Syncing…" : "Sync"}
         </button>
       </div>
@@ -1159,15 +1171,15 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
           {f.sleepMins > 0 && (
             <div style={{ display:"flex", gap:6, marginBottom:12 }}>
               {[["Deep", f.deepMins, "#4a5ea8"], ["REM", f.remMins, "#8a7ec8"], ["Light", f.lightMins, "#aaa0d8"]].map(([label, val, color]) => (
-                <div key={label} style={{ flex:1, padding:"8px 6px", background:"rgba(255,255,255,0.05)", borderRadius:10, textAlign:"center", border:"1px solid rgba(255,255,255,0.07)" }}>
+                <div key={label} style={{ flex:1, padding:"8px 6px", background:"#f5f0e8", borderRadius:10, textAlign:"center", border:"1px solid #e8e0d4" }}>
                   <div style={{ fontSize:13, fontWeight:700, color }}>{fmtMins(val)}</div>
-                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.4)", marginTop:2, letterSpacing:0.8 }}>{label.toUpperCase()}</div>
+                  <div style={{ fontSize:9, color:"#8a7a6a", marginTop:2, letterSpacing:0.8 }}>{label.toUpperCase()}</div>
                 </div>
               ))}
               {f.activeMin > 0 && (
-                <div style={{ flex:1, padding:"8px 6px", background:"rgba(255,255,255,0.05)", borderRadius:10, textAlign:"center", border:"1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ flex:1, padding:"8px 6px", background:"#f5f0e8", borderRadius:10, textAlign:"center", border:"1px solid #e8e0d4" }}>
                   <div style={{ fontSize:13, fontWeight:700, color:"#6a9e6a" }}>{f.activeMin}m</div>
-                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.4)", marginTop:2, letterSpacing:0.8 }}>ACTIVE</div>
+                  <div style={{ fontSize:9, color:"#8a7a6a", marginTop:2, letterSpacing:0.8 }}>ACTIVE</div>
                 </div>
               )}
             </div>
@@ -1175,17 +1187,17 @@ function FitbitSection({ fitbitData, onUpdate, connected }) {
           {/* Steps progress bar */}
           <div>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-              <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Daily step goal</span>
+              <span style={{ fontSize:11, color:"#8a7a6a" }}>Daily step goal</span>
               <span style={{ fontSize:11, color:"#6a7ec8", fontWeight:600 }}>{((f.steps||0)/10000*100).toFixed(0)}%</span>
             </div>
-            <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:6, height:6 }}>
+            <div style={{ background:"#e8e0d4", borderRadius:6, height:6 }}>
               <div style={{ width:Math.min(100,(f.steps||0)/10000*100)+"%" , height:"100%", background:"#6a7ec8", borderRadius:6 }}/>
             </div>
           </div>
         </div>
       )}
       {!f && !syncing && (
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>Tap Sync to pull today's data from Fitbit.</div>
+        <div style={{ fontSize:13, color:"#8a7a6a" }}>Tap Sync to pull today's data from Fitbit.</div>
       )}
     </Section>
   );
@@ -1324,12 +1336,12 @@ function WeightSection({ entry, allEntries, currentDay, onUpdate, dayContext }) 
       .sort((a, b) => a[0].localeCompare(b[0]));
     const lastEntry = prev[prev.length - 1];
     const lastKg = lastEntry ? parseFloat(lastEntry[1].weight) : null;
-    const diff = lastKg !== null ? +(kg - lastKg).toFixed(2) : null;
+    const diff = lastKg !== null ? +(kg - lastKg).toFixed(1) : null;
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
     const cutoffStr = cutoff.toISOString().split("T")[0];
     const weekEntries = prev.filter(([d]) => d >= cutoffStr);
     const weekTrend = weekEntries.length >= 2
-      ? +(parseFloat(weekEntries[weekEntries.length-1][1].weight) - parseFloat(weekEntries[0][1].weight)).toFixed(2)
+      ? +(parseFloat(weekEntries[weekEntries.length-1][1].weight) - parseFloat(weekEntries[0][1].weight)).toFixed(1)
       : null;
 
     const msgs = [];
@@ -1430,7 +1442,7 @@ function BPSection({ entry, onUpdate }) {
   const livecat = bpCategory(systolic, diastolic);
 
   return (
-    <Section title="BLOOD PRESSURE" accent="#c87a6a" dark>
+    <Section title="BLOOD PRESSURE" accent="#c87a6a">
       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
         {[["Systolic","120",systolic,setSystolic],["Diastolic","80",diastolic,setDiastolic],["Pulse","72",pulse,setPulse]].map(([label,ph,val,set])=>(
           <div key={label} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
@@ -1590,7 +1602,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
   };
 
   return (
-    <Section title="WEIGHT TREND" accent="#6a9e6a" dark>
+    <Section title="WEIGHT TREND" accent="#6a9e6a">
       {(() => {
         const W = Math.max(weightData.length*52, 300);
         const H = 130, padT = 14, chartH = 80;
@@ -1606,20 +1618,20 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                 <span style={{ fontSize:26, fontWeight:800, color:trendColor }}>
                   {Number(trend) > 0 ? "+" : ""}{trend} kg
                 </span>
-                <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>over this period</span>
+                <span style={{ fontSize:12, color:"#8a7a6a" }}>over this period</span>
               </div>
             )}
             <ScrollRight>
               <svg width={W} height={H}>
                 <defs>
                   <linearGradient id="wtGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={trendColor} stopOpacity="0.3"/>
+                    <stop offset="0%" stopColor={trendColor} stopOpacity="0.12"/>
                     <stop offset="100%" stopColor={trendColor} stopOpacity="0"/>
                   </linearGradient>
                 </defs>
                 {[minW, (minW+maxW)/2, maxW].map((v,i) => {
                   const y = yFor(v);
-                  return <g key={i}><line x1={0} x2={W} y1={y} y2={y} stroke="rgba(255,255,255,0.06)"/><text x={2} y={y-2} fontSize={8} fill="rgba(255,255,255,0.25)">{v.toFixed(1)}</text></g>;
+                  return <g key={i}><line x1={0} x2={W} y1={y} y2={y} stroke="#f0ebe2"/><text x={2} y={y-2} fontSize={8} fill="#8a7a6a">{v.toFixed(1)}</text></g>;
                 })}
                 <polygon points={pts + " " + areaBottom} fill="url(#wtGrad)"/>
                 <polyline points={pts} fill="none" stroke={trendColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
@@ -1627,7 +1639,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                   <g key={i}>
                     <circle cx={i*52+26} cy={yFor(d.w)} r={4} fill={trendColor}/>
                     <text x={i*52+26} y={yFor(d.w)-8} textAnchor="middle" fontSize={9} fontWeight="600" fill={trendColor}>{d.w}</text>
-                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.3)">{d.d.split(",")[0]}</text>
+                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
                   </g>
                 ))}
               </svg>
@@ -1702,10 +1714,10 @@ Be direct and specific. British English. 4-5 sentences total.`
   const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP);
 
   return (
-    <Section title="BLOOD PRESSURE" accent="#c87a6a" dark>
+    <Section title="BLOOD PRESSURE" accent="#c87a6a">
       <ScrollRight>
         <svg width={W} height={H}>
-          {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"rgba(200,122,106,0.5)":"rgba(255,255,255,0.07)"} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"rgba(255,255,255,0.3)"}>{v}</text></g>; })}
+          {gridLines.map(v => { const y=yFor(v); const isT=v===140||v===90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT?"rgba(200,122,106,0.5)":"#f0ebe2"} strokeDasharray={isT?"4 2":""}/><text x={2} y={y-2} fontSize={8} fill={isT?"#c87a6a":"#8a7a6a"}>{v}</text></g>; })}
           <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.sys)}`).join(" ")} fill="none" stroke="#c87a6a" strokeLinejoin="round"/>
           <polyline points={bpData.map((d,i)=>`${i*60+30},${yFor(d.dia)}`).join(" ")} fill="none" stroke="#7a9ec8" strokeLinejoin="round" strokeDasharray="4 2"/>
           {bpData.map((d,i)=>{
@@ -1716,7 +1728,7 @@ Be direct and specific. British English. 4-5 sentences total.`
               <text x={i*60+30} y={yFor(d.sys)-7} textAnchor="middle" fontSize={8} fill="#c87a6a">{d.sys}</text>
               <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={8} fill="#7a9ec8">{d.dia}</text>
               {d.pulse && <text x={i*60+30} y={yFor(d.dia)+24} textAnchor="middle" fontSize={7} fill="#8a7a6a">♥{d.pulse}</text>}
-              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.3)">{d.d.split(",")[0]}</text>
+              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
             </g>);
           })}
         </svg>
@@ -1724,8 +1736,8 @@ Be direct and specific. British English. 4-5 sentences total.`
       <div style={{ display:"flex", gap:14, marginTop:6, fontSize:12, flexWrap:"wrap" }}>
         <span style={{color:"#c87a6a", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#c87a6a",borderRadius:2,display:"inline-block"}}/>Systolic</span>
         <span style={{color:"#7a9ec8", display:"flex", alignItems:"center", gap:4}}><span style={{width:16,height:2,background:"#7a9ec8",borderRadius:2,display:"inline-block",opacity:0.7}}/>Diastolic</span>
-        <span style={{color:"rgba(255,255,255,0.4)"}}>♥ Pulse</span>
-        <span style={{color:"rgba(200,122,106,0.5)", fontSize:11}}>· 140/90 threshold</span>
+        <span style={{color:"#8a7a6a"}}>♥ Pulse</span>
+        <span style={{color:"#c87a6a", fontSize:11, opacity:0.6}}>· 140/90 threshold</span>
       </div>
       <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
         <button onClick={analyse} disabled={loading}
@@ -1808,7 +1820,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
   const renderSection = (id) => {
     switch(id) {
       case 'mood_energy': return (
-        <Section title="MOOD & ENERGY" accent="#c8955a" dark>
+        <Section title="MOOD & ENERGY" accent="#c8955a">
           {(() => {
             const W = Math.max(moodData.length * 52, 300);
             const H = 130, padT = 10, chartH = 90;
@@ -1822,15 +1834,15 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                 <svg width={W} height={H+14}>
                   <defs>
                     <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#c8955a" stopOpacity="0.35"/>
+                      <stop offset="0%" stopColor="#c8955a" stopOpacity="0.15"/>
                       <stop offset="100%" stopColor="#c8955a" stopOpacity="0"/>
                     </linearGradient>
                     <linearGradient id="engGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7a9ec8" stopOpacity="0.25"/>
+                      <stop offset="0%" stopColor="#7a9ec8" stopOpacity="0.12"/>
                       <stop offset="100%" stopColor="#7a9ec8" stopOpacity="0"/>
                     </linearGradient>
                   </defs>
-                  {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={W} y1={yFor(v)} y2={yFor(v)} stroke="rgba(255,255,255,0.06)"/>)}
+                  {[1,2,3,4,5].map(v=><line key={v} x1={0} x2={W} y1={yFor(v)} y2={yFor(v)} stroke="#f0ebe2"/>)}
                   <polygon points={moodArea} fill="url(#moodGrad)"/>
                   <polygon points={engArea}  fill="url(#engGrad)"/>
                   <polyline points={moodPts} fill="none" stroke="#c8955a" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
@@ -1839,7 +1851,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                     <g key={i}>
                       <circle cx={i*52+26} cy={yFor(d.mood||1)} r={4} fill="#c8955a"/>
                       <circle cx={i*52+26} cy={yFor(d.energy||1)} r={3} fill="#7a9ec8"/>
-                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.35)">{d.d.split(",")[0]}</text>
+                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
                     </g>
                   ))}
                 </svg>
@@ -1856,14 +1868,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         const avgCals = Math.round(calData.filter(d=>d.cals>0).reduce((s,d)=>s+d.cals,0) / calData.filter(d=>d.cals>0).length);
         const avgY = 90 - (avgCals/maxCals)*80;
         return (
-          <Section title="DAILY CALORIES" accent="#c8955a" dark>
+          <Section title="DAILY CALORIES" accent="#c8955a">
             {(() => {
               const W = Math.max(calData.length*52, 300);
               return (
                 <ScrollRight>
                   <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={avgY} y2={avgY} stroke="rgba(200,149,90,0.4)" strokeDasharray="4 3"/>
-                    <text x={4} y={avgY-3} fontSize={8} fill="rgba(200,149,90,0.7)">avg {avgCals}</text>
+                    <line x1={0} x2={W} y1={avgY} y2={avgY} stroke="#c8955a44" strokeDasharray="4 3"/>
+                    <text x={4} y={avgY-3} fontSize={8} fill="#8a7a6a">avg {avgCals}</text>
                     {calData.map((d,i)=>{
                       const h=(d.cals/maxCals)*80;
                       const over = d.cals > 2500;
@@ -1872,7 +1884,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                           <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5}
                             fill={over ? "#c87a6a" : "#c8955a"} opacity={d.cals ? 1 : 0.2}/>
                           {d.cals > 0 && <text x={i*52+26} y={Math.max(88-h, 14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={over?"#c87a6a":"#c8955a"}>{d.cals}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.3)">{d.d.split(",")[0]}</text>
+                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
                         </g>
                       );
                     })}
@@ -1880,22 +1892,22 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                 </ScrollRight>
               );
             })()}
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:4 }}>
+            <div style={{ fontSize:11, color:"#8a7a6a", marginTop:4 }}>
               Red = over 2,500 kcal · Dashed = your average ({avgCals} kcal)
             </div>
           </Section>
         );
       })() : null;
       case 'steps': return stepsData.length >= 2 ? (
-        <Section title="DAILY STEPS" accent="#6a7ec8" dark>
+        <Section title="DAILY STEPS" accent="#6a7ec8">
           {(() => {
             const W = Math.max(stepsData.length*52, 300);
             const goalY = 90 - (10000/maxSteps)*80;
             return (
               <ScrollRight>
                 <svg width={W} height={130}>
-                  <line x1={0} x2={W} y1={goalY} y2={goalY} stroke="rgba(106,126,200,0.4)" strokeDasharray="4 3"/>
-                  <text x={4} y={goalY-3} fontSize={8} fill="rgba(106,126,200,0.7)">10k goal</text>
+                  <line x1={0} x2={W} y1={goalY} y2={goalY} stroke="#6a7ec844" strokeDasharray="4 3"/>
+                  <text x={4} y={goalY-3} fontSize={8} fill="#8a7a6a">10k goal</text>
                   {stepsData.map((d,i)=>{
                     const h=(d.s/maxSteps)*80;
                     const met = d.s >= 10000;
@@ -1904,7 +1916,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                       <g key={i}>
                         <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5} fill={met?"#6a9e6a":"#6a7ec8"}/>
                         <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={met?"#6a9e6a":"#6a7ec8"}>{label}</text>
-                        <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.3)">{d.d.split(",")[0]}</text>
+                        <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
                       </g>
                     );
                   })}
@@ -1912,14 +1924,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
               </ScrollRight>
             );
           })()}
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:4 }}>Green = 10k goal reached</div>
+          <div style={{ fontSize:11, color:"#8a7a6a", marginTop:4 }}>Green = 10k goal reached</div>
         </Section>
       ) : null;
       case 'weight': return weightData.length >= 2 ? (
         <WeightTrendSection weightData={weightData} minW={minW} maxW={maxW} allEntries={entries} />
       ) : null;
       case 'alcohol': return alcData.some(d=>d.u>0) ? (
-        <Section title="ALCOHOL (UNITS)" accent="#c87a6a" dark>
+        <Section title="ALCOHOL (UNITS)" accent="#c87a6a">
           {(() => {
             const W = Math.max(alcData.length*52, 300);
             const guideY = 90-(2/maxAlc)*80;
@@ -1927,13 +1939,13 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             return (
               <>
                 <div style={{ marginBottom:10, display:"flex", alignItems:"baseline", gap:6 }}>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#c8955a" }}>{totalUnits}</span>
-                  <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>units this period</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#c87a6a" }}>{totalUnits}</span>
+                  <span style={{ fontSize:12, color:"#8a7a6a" }}>units this period</span>
                 </div>
                 <ScrollRight>
                   <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={guideY} y2={guideY} stroke="rgba(200,122,106,0.4)" strokeDasharray="4 3"/>
-                    <text x={4} y={guideY-3} fontSize={8} fill="rgba(200,122,106,0.7)">2u/day</text>
+                    <line x1={0} x2={W} y1={guideY} y2={guideY} stroke="#c87a6a44" strokeDasharray="4 3"/>
+                    <text x={4} y={guideY-3} fontSize={8} fill="#8a7a6a">2u/day</text>
                     {alcData.map((d,i)=>{
                       const h=(d.u/maxAlc)*80;
                       const col = d.u>6 ? "#c87a6a" : d.u>2 ? "#e0a060" : "#6a9e6a";
@@ -1941,7 +1953,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                         <g key={i}>
                           <rect x={i*52+13} y={90-(h||0)} width={26} height={h||2} rx={5} fill={col} opacity={d.u>0?1:0.15}/>
                           {d.u>0 && <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={9} fontWeight="600" fill={col}>{d.u}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.3)">{d.d.split(",")[0]}</text>
+                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={9} fill="#8a7a6a">{d.d.split(",")[0]}</text>
                         </g>
                       );
                     })}
@@ -1961,7 +1973,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} />
       ) : null;
       case 'ai': return (
-        <Section title="AI PATTERN ANALYSIS" accent="#c8955a" dark>
+        <Section title="AI PATTERN ANALYSIS" accent="#c8955a">
           <button onClick={getInsights} disabled={loading}
             style={{ padding:"10px 22px", background:"#c8955a", color:"#fff", border:"none", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:700 }}>
             {loading ? "Analysing…" : "Analyse my patterns"}
@@ -2328,7 +2340,7 @@ function StatsBar({ entries }) {
 
   const warnUnits = units > 14/7 * (period==="day"?1:period==="week"?7:30);
 
-  const Divider = () => <div style={{ width:1, background:"rgba(255,255,255,0.08)", margin:"4px 0" }} />;
+  const Divider = () => <div style={{ width:1, background:"rgba(30,20,8,0.12)", margin:"4px 0" }} />;
 
   // Clickable stat tile
   const Stat = ({ label, value, unit, warn, onClick, clickable, icon, valueColor }) => (
@@ -2348,7 +2360,7 @@ function StatsBar({ entries }) {
   );
 
   return (
-    <div style={{ background:"#1e1408", borderTop:"1px solid rgba(255,255,255,0.06)", padding:"8px 16px 10px" }}>
+    <div style={{ background:"#1e1408", borderTop:"1px solid rgba(30,20,8,0.15)", padding:"8px 16px 10px" }}>
       <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:6 }}>
         {[["day","Day"],["week","Week"],["month","Month"]].map(([k,l])=>(
           <button key={k} onClick={()=>setPeriod(k)}
@@ -2501,7 +2513,7 @@ function App() {
             </div>
           </div>
           <button onClick={()=>setShowSettings(true)}
-            style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)", color:"#6a5a3a", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.18)", color:"#c8a878", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Icon name="settings" size={20} color="#6a5a3a" />
           </button>
         </div>
