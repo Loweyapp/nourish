@@ -660,6 +660,12 @@ function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayCo
 
 Return ONLY valid JSON, no markdown.
 
+CRITICAL RULES:
+- "type" must be "alcohol" ONLY if the drink contains alcohol (beer, wine, spirits, cider etc). Non-alcoholic drinks (water, juice, tea, coffee, coke, lemonade etc) are type "food".
+- "type" is "both" ONLY if the entry contains BOTH food AND an alcoholic drink.
+- "units" must be 0 for anything non-alcoholic. Never assign units to soft drinks, juices, or other non-alcoholic beverages.
+- UK alcohol units = (volume_ml * abv%) / 1000
+
 If SINGLE food or drink:
 {"multi":false,"type":"food"|"alcohol"|"both","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>,"commentary":"<2-3 sentences>"}
 
@@ -709,6 +715,12 @@ Be realistic. UK measurements and British English.`
         `You are a nutrition and drinks expert. The user may enter a single item or multiple meals at once, e.g. "Lunch 2 eggs and salad. Dinner steak and broccoli."
 
 Return ONLY valid JSON, no markdown.
+
+CRITICAL RULES:
+- "type" must be "alcohol" ONLY if the drink contains alcohol (beer, wine, spirits, cider etc). Non-alcoholic drinks (water, juice, tea, coffee, coke, lemonade etc) are type "food".
+- "type" is "both" ONLY if the entry contains BOTH food AND an alcoholic drink.
+- "units" must be 0 for anything non-alcoholic. Never assign units to soft drinks, juices, or other non-alcoholic beverages.
+- UK alcohol units = (volume_ml * abv%) / 1000
 
 If SINGLE food or drink:
 {"multi":false,"type":"food"|"alcohol"|"both","calories":<n>,"protein_g":<n>,"carbs_g":<n>,"fat_g":<n>,"units":<n>,"drink_type":"<or null>","abv":<n or null>,"volume_ml":<n or null>,"commentary":"<2-3 sentences>"}
@@ -830,7 +842,6 @@ Be realistic. UK measurements and British English.`
       )}
 
       <textarea ref={textareaRef} placeholder="e.g. bowl of porridge with banana, pint of Guinness, glass of red wine…" value={text} onChange={e=>setText(e.target.value)}
-        onFocus={()=>{ if(favourites.length>0) setShowFavs(true); }}
         style={{ width:"100%", minHeight:72, padding:"10px 12px", borderRadius:10, border:"1.5px solid #e0ccb4", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#3d2b1a", resize:"vertical", outline:"none" }} />
       {error && <div style={{ fontSize:12, color:"#c87a6a", marginTop:6 }}>{error}</div>}
 
