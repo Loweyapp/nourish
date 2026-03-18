@@ -1275,11 +1275,28 @@ function DraggableLayout({ storageKey, defaultOrder, editMode, renderSection }) 
         return (
           <div key={id} style={{ position:"relative" }}>
             {editMode && (
-              <div style={{ position:"absolute", top:10, right:10, zIndex:20, display:"flex", flexDirection:"column", gap:3 }}>
-                <button onClick={()=>move(idx, -1)} disabled={idx===0}
-                  style={{ width:30, height:30, background:idx===0?"#e0ccb4":"#c8955a", color:"#fff", border:"none", borderRadius:"6px 6px 3px 3px", fontSize:14, lineHeight:1, cursor:idx===0?"default":"pointer", opacity:idx===0?0.4:1 }}>↑</button>
-                <button onClick={()=>move(idx, 1)} disabled={idx===order.length-1}
-                  style={{ width:30, height:30, background:idx===order.length-1?"#e0ccb4":"#c8955a", color:"#fff", border:"none", borderRadius:"3px 3px 6px 6px", fontSize:14, lineHeight:1, cursor:idx===order.length-1?"default":"pointer", opacity:idx===order.length-1?0.4:1 }}>↓</button>
+              <div style={{ position:"absolute", top:10, right:10, zIndex:20, display:"flex", flexDirection:"row", gap:6 }}>
+                {[[-1, false], [1, true]].map(([dir, flip]) => {
+                  const disabled = dir === -1 ? idx === 0 : idx === order.length - 1;
+                  const col = disabled ? "#d0c0a8" : "#4a7ec8";
+                  return (
+                    <button key={dir} onClick={()=>move(idx, dir)} disabled={disabled}
+                      style={{
+                        width:34, height:34, borderRadius:"50%",
+                        background: disabled ? "#f0eae0" : "#fff",
+                        border: `2.5px solid ${col}`,
+                        cursor: disabled ? "default" : "pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        boxShadow: disabled ? "none" : "0 2px 8px #4a7ec833",
+                        transition:"all 0.15s", padding:0
+                      }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+                        style={{ transform: flip ? "rotate(180deg)" : "none" }}>
+                        <polyline points="2,10 7,4 12,10" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  );
+                })}
               </div>
             )}
             {content}
