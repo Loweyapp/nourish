@@ -67,6 +67,7 @@ const ENERGY = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function today() { return new Date().toISOString().split("T")[0]; }
+function r1(v) { return Math.round((v||0) * 10) / 10; } // round to 1dp
 function yesterday() {
   const d = new Date(); d.setDate(d.getDate() - 1);
   return d.toISOString().split("T")[0];
@@ -760,22 +761,24 @@ Be realistic. UK measurements and British English.`
         const newFood = [], newDrinks = [];
         for (const item of parsed.items) {
           const t = item.suggested_time || "12:00";
-          if (item.type === "alcohol") newDrinks.push({ ...item, time: t });
-          else if (item.type === "both") { newFood.push({ ...item, time: t }); newDrinks.push({ ...item, time: t }); }
-          else newFood.push({ ...item, time: t });
+          const rounded = { ...item, calories: r1(item.calories), protein_g: r1(item.protein_g), carbs_g: r1(item.carbs_g), fat_g: r1(item.fat_g), units: r1(item.units), time: t };
+          if (item.type === "alcohol") newDrinks.push(rounded);
+          else if (item.type === "both") { newFood.push(rounded); newDrinks.push(rounded); }
+          else newFood.push(rounded);
         }
         if (newFood.length)   onUpdate([...foodItems, ...newFood]);
         if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks]);
         const totalCals = parsed.items.reduce((s,i)=>s+(i.calories||0),0);
-        const totalProt = parsed.items.reduce((s,i)=>s+(i.protein_g||0),0);
-        const totalCarb = parsed.items.reduce((s,i)=>s+(i.carbs_g||0),0);
-        const totalFat  = parsed.items.reduce((s,i)=>s+(i.fat_g||0),0);
+        const totalProt = r1(parsed.items.reduce((s,i)=>s+(i.protein_g||0),0));
+        const totalCarb = r1(parsed.items.reduce((s,i)=>s+(i.carbs_g||0),0));
+        const totalFat  = r1(parsed.items.reduce((s,i)=>s+(i.fat_g||0),0));
         setPending({ _multiSummary:true, commentary:parsed.commentary, calories:totalCals, protein_g:totalProt, carbs_g:totalCarb, fat_g:totalFat });
         setText("");
       } else {
-        if (parsed.type === "alcohol") setPendingDrink({ ...parsed, text: text.trim() });
-        else if (parsed.type === "both") { setPending({ ...parsed, text: text.trim() }); setPendingDrink({ ...parsed, text: text.trim() }); }
-        else setPending({ ...parsed, text: text.trim() });
+        const rp = { ...parsed, calories: r1(parsed.calories), protein_g: r1(parsed.protein_g), carbs_g: r1(parsed.carbs_g), fat_g: r1(parsed.fat_g), units: r1(parsed.units), text: text.trim() };
+        if (parsed.type === "alcohol") setPendingDrink(rp);
+        else if (parsed.type === "both") { setPending(rp); setPendingDrink(rp); }
+        else setPending(rp);
       }
     } catch(e) { setError(e.message || "Couldn't analyse — try being more specific."); }
     setLoading(false);
@@ -876,9 +879,9 @@ Be realistic. UK measurements and British English.`
           </div>
           {(item.protein_g||item.carbs_g||item.fat_g) ? (
             <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
-              {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf5f0", color:"#4a8a5a", fontWeight:600 }}>{item.protein_g}g P</span>}
-              {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf0f8", color:"#4a5a9a", fontWeight:600 }}>{item.carbs_g}g C</span>}
-              {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f8eeec", color:"#8a4a3a", fontWeight:600 }}>{item.fat_g}g F</span>}
+              {item.protein_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf5f0", color:"#4a8a5a", fontWeight:600 }}>{Math.round(item.protein_g)}g P</span>}
+              {item.carbs_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#edf0f8", color:"#4a5a9a", fontWeight:600 }}>{Math.round(item.carbs_g)}g C</span>}
+              {item.fat_g>0 && <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#f8eeec", color:"#8a4a3a", fontWeight:600 }}>{Math.round(item.fat_g)}g F</span>}
             </div>
           ) : null}
         </div>
