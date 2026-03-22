@@ -123,8 +123,17 @@ function getFavourites()     { return ls.get(FAVOURITES_KEY, []); }
 function saveFavourites(f)   { ls.set(FAVOURITES_KEY, f); }
 function addFavourite(fav)   {
   const favs = getFavourites();
-  const name = (fav.name || fav.text).toLowerCase();
-  if (favs.find(f => (f.name || f.text).toLowerCase() === name)) return; // no dupes
+  const newName = (fav.name || fav.text).toLowerCase();
+  // If an entry exists with the same underlying text, update it with the new name rather than skipping
+  const existingIdx = favs.findIndex(f => f.text.toLowerCase() === fav.text.toLowerCase());
+  if (existingIdx >= 0) {
+    const updated = [...favs];
+    updated[existingIdx] = { ...updated[existingIdx], ...fav };
+    saveFavourites(updated);
+    return;
+  }
+  // Also prevent duplicate names
+  if (favs.find(f => (f.name || f.text).toLowerCase() === newName)) return;
   saveFavourites([...favs, { ...fav, useCount: 0 }]);
 }
 function incrementFavUseCount(texts) {
@@ -859,6 +868,11 @@ Be realistic. UK measurements and British English.`
       fat_g: pending.fat_g || 0,
       units: pendingDrink?.units || 0,
     });
+    // Update pending so "Add to log" also uses the friendly name
+    if (savingFavName.trim()) {
+      setPending(p => p ? { ...p, text: savingFavName.trim() } : p);
+      if (pendingDrink) setPendingDrink(p => p ? { ...p, text: savingFavName.trim() } : p);
+    }
     setFavourites(getFavourites());
     setShowFavNameInput(false);
     setFavSaved(true);
