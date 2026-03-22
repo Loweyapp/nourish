@@ -96,18 +96,25 @@ function saveApiKey(k)   { ls.setStr(API_KEY_STORAGE, k); }
 function getFitbitToken(){ return ls.get(FB_TOKEN_KEY); }
 function getCoachingStyle() { return ls.str(COACHING_KEY) || ""; }
 function saveCoachingStyle(s) { ls.setStr(COACHING_KEY, s); }
-// Session token tracking
+// Token tracking — session + cumulative
+const USAGE_KEY = "nourish-usage-total";
 const sessionUsage = { input: 0, output: 0 };
+function getLifetimeUsage() { return ls.get(USAGE_KEY, { input: 0, output: 0 }); }
 function trackUsage(usage) {
   if (!usage) return;
   sessionUsage.input  += usage.input_tokens  || 0;
   sessionUsage.output += usage.output_tokens || 0;
+  const lifetime = getLifetimeUsage();
+  ls.set(USAGE_KEY, {
+    input:  lifetime.input  + (usage.input_tokens  || 0),
+    output: lifetime.output + (usage.output_tokens || 0),
+  });
 }
-function estimateCost() {
-  // claude-sonnet-4 pricing: ~£2.37/M input, ~£11.85/M output (at ~$1=£0.79)
-  const cost = (sessionUsage.input / 1e6) * 2.37 + (sessionUsage.output / 1e6) * 11.85;
-  return cost < 0.01 ? "<£0.01" : `£${cost.toFixed(3)}`;
+function calcCost(inp, out) {
+  const cost = (inp / 1e6) * 2.37 + (out / 1e6) * 11.85;
+  return cost < 0.01 ? "<£0.01" : `£${cost.toFixed(2)}`;
 }
+function estimateCost() { return calcCost(sessionUsage.input, sessionUsage.output); }
 function saveFitbitToken(t) { ls.set(FB_TOKEN_KEY, t); }
 function clearFitbitToken() { ls.del(FB_TOKEN_KEY); ls.del(FB_FETCH_KEY); }
 
@@ -116,20 +123,21 @@ function getFavourites()     { return ls.get(FAVOURITES_KEY, []); }
 function saveFavourites(f)   { ls.set(FAVOURITES_KEY, f); }
 function addFavourite(fav)   {
   const favs = getFavourites();
-  if (favs.find(f => f.text.toLowerCase() === fav.text.toLowerCase())) return; // no dupes
+  const name = (fav.name || fav.text).toLowerCase();
+  if (favs.find(f => (f.name || f.text).toLowerCase() === name)) return; // no dupes
   saveFavourites([...favs, { ...fav, useCount: 0 }]);
 }
 function incrementFavUseCount(texts) {
-  // texts is an array of favourite text strings that were just used
+  // texts is an array of favourite name/text strings that were just used
   const favs = getFavourites().map(f =>
-    texts.includes(f.text) ? { ...f, useCount: (f.useCount || 0) + 1 } : f
+    texts.includes(f.name || f.text) ? { ...f, useCount: (f.useCount || 0) + 1 } : f
   );
   // Re-sort by useCount descending
   favs.sort((a, b) => (b.useCount || 0) - (a.useCount || 0));
   saveFavourites(favs);
 }
-function removeFavourite(text) {
-  saveFavourites(getFavourites().filter(f => f.text !== text));
+function removeFavourite(nameOrText) {
+  saveFavourites(getFavourites().filter(f => (f.name || f.text) !== nameOrText));
 }
 
 // ── Google Drive ──────────────────────────────────────────────────────────────
@@ -223,7 +231,8 @@ function shouldAutoBackup() {
 
 // ── Dummy data seeder (for previewing graphs) ─────────────────────────────────
 function seedDummyData() {
-  if (ls.str(DUMMY_SEEDED_KEY) === "cleared") return; // user explicitly cleared
+  const seeded = ls.str(DUMMY_SEEDED_KEY);
+  if (seeded === "cleared" || seeded === "1") return; // already seeded or explicitly cleared
   const entries = loadEntries();
   const alcDays = [
     [],
@@ -793,12 +802,12 @@ Be realistic. UK measurements and British English.`
     if (!selectedFavs.length) return;
     const nowHour = new Date().getHours();
     const nowTime = String(nowHour).padStart(2,"0") + ":00";
-    const toAdd = favourites.filter(f => selectedFavs.includes(f.text));
+    const toAdd = favourites.filter(f => selectedFavs.includes(f.name || f.text));
     const newFood = [];
     const newDrinks = [];
     toAdd.forEach(fav => {
       const item = {
-        text: fav.text,
+        text: fav.name || fav.text,
         calories: fav.calories || 0,
         protein_g: fav.protein_g || 0,
         carbs_g: fav.carbs_g || 0,
@@ -814,23 +823,35 @@ Be realistic. UK measurements and British English.`
     });
     if (newFood.length)   onUpdate([...foodItems, ...newFood]);
     if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks]);
-    // Increment use counts and re-sort
     incrementFavUseCount(selectedFavs);
     setFavourites(getFavourites());
     setSelectedFavs([]);
     setShowFavs(false);
   };
 
-  const toggleFavSelection = (text) => {
+  const toggleFavSelection = (nameOrText) => {
     setSelectedFavs(prev =>
-      prev.includes(text) ? prev.filter(t => t !== text) : [...prev, text]
+      prev.includes(nameOrText) ? prev.filter(t => t !== nameOrText) : [...prev, nameOrText]
     );
   };
 
-  // Save current pending item as a favourite (store full nutrition for direct-add)
-  const saveAsFavourite = () => {
+  // Save current pending item as a favourite with optional custom name
+  const [savingFavName, setSavingFavName] = useState("");
+  const [showFavNameInput, setShowFavNameInput] = useState(false);
+  const [favSaved, setFavSaved] = useState(false);
+
+  const openSaveFav = () => {
     if (!pending?.text) return;
+    setSavingFavName("");
+    setShowFavNameInput(true);
+    setFavSaved(false);
+  };
+
+  const confirmSaveFav = () => {
+    if (!pending?.text) return;
+    const name = savingFavName.trim() || pending.text;
     addFavourite({
+      name,
       text: pending.text,
       calories: pending.calories || 0,
       protein_g: pending.protein_g || 0,
@@ -839,6 +860,9 @@ Be realistic. UK measurements and British English.`
       units: pendingDrink?.units || 0,
     });
     setFavourites(getFavourites());
+    setShowFavNameInput(false);
+    setFavSaved(true);
+    setTimeout(() => setFavSaved(false), 2000);
   };
 
   const addItem = () => {
@@ -958,11 +982,12 @@ Be realistic. UK measurements and British English.`
       {favourites.length > 0 && (
         <div style={{ marginBottom:8, position:"relative" }}>
           {showFavs && (
-            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #efefef", borderRadius:10, boxShadow:"0 4px 16px #9ebd6e22", marginTop:4, maxHeight:260, overflowY:"auto" }}>
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"#fff", border:"1.5px solid #efefef", borderRadius:10, boxShadow:"0 4px 16px rgba(0,0,0,0.08)", marginTop:4, maxHeight:260, overflowY:"auto" }}>
               {favourites.map((fav, i) => {
-                const checked = selectedFavs.includes(fav.text);
+                const key = fav.name || fav.text;
+                const checked = selectedFavs.includes(key);
                 return (
-                  <div key={i} onClick={()=>toggleFavSelection(fav.text)}
+                  <div key={i} onClick={()=>toggleFavSelection(key)}
                     style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", cursor:"pointer",
                       background: checked ? "#f5f5f5" : "none",
                       borderBottom: i < favourites.length-1 ? "1px solid #f5f5f5" : "none" }}>
@@ -971,13 +996,16 @@ Be realistic. UK measurements and British English.`
                       display:"flex", alignItems:"center", justifyContent:"center" }}>
                       {checked && <span style={{ color:"#fff", fontSize:13, lineHeight:1, fontWeight:700 }}>✓</span>}
                     </div>
-                    <span style={{ flex:1, fontSize:14, color:"#111111" }}>{fav.text}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, color:"#111111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{fav.name || fav.text}</div>
+                      {fav.name && fav.text !== fav.name && <div style={{ fontSize:11, color:"#aaaaaa", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{fav.text}</div>}
+                    </div>
                     <span style={{ fontSize:12, color:"#767676", flexShrink:0 }}>{fav.calories ? fav.calories + " kcal" : "—"}</span>
                   </div>
                 );
               })}
               {selectedFavs.length > 0 && (
-                <div style={{ padding:"10px 14px", borderTop:"1.5px solid #efefef", background:"#f5f5f5" }}>
+                <div style={{ padding:"10px 14px", borderTop:"1.5px solid #efefef", background:"#f9f9f9" }}>
                   <button onClick={addSelectedFavourites}
                     style={{ width:"100%", padding:"10px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontFamily:"inherit", fontWeight:700, cursor:"pointer" }}>
                     {"+ Add " + selectedFavs.length + " item" + (selectedFavs.length > 1 ? "s" : "") + " to log"}
@@ -991,15 +1019,47 @@ Be realistic. UK measurements and British English.`
 
       <textarea ref={textareaRef} placeholder="What did you eat or drink? Be specific for best accuracy…" value={text} onChange={e=>setText(e.target.value)}
         style={{ width:"100%", minHeight:46, padding:"12px 14px", borderRadius:12, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", resize:"none", outline:"none", lineHeight:1.5 }} />
-      {error && <div style={{ fontSize:12, color:"#111111", marginTop:6 }}>{error}</div>}
+      {error && <div style={{ fontSize:12, color:"#e8457a", marginTop:6 }}>{error}</div>}
 
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:2 }}>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:8 }}>
         <AnalyseBtn onClick={analyse} disabled={!text.trim()||loading}>Analyse</AnalyseBtn>
-        {isPending && !pending?._multiSummary && <AnalyseBtn onClick={addItem} color="#6a9e6a">✓ Add to log</AnalyseBtn>}
-        {isPending && !pending?._multiSummary && pending?.text && !favourites.find(f=>f.text===pending.text) && (
-          <AnalyseBtn onClick={saveAsFavourite} color="#767676"><Icon name="star" size={15} color="#fff"/> Save</AnalyseBtn>
+        {(text.trim() || isPending) && (
+          <button onClick={()=>{ setText(""); setPending(null); setPendingDrink(null); setPreviewSrc(null); setError(""); setShowFavNameInput(false); }}
+            style={{ padding:"10px 18px", background:"none", border:"1.5px solid #efefef", borderRadius:24, fontSize:14, fontFamily:"inherit", fontWeight:600, color:"#767676", cursor:"pointer" }}>
+            Clear
+          </button>
         )}
+        {isPending && !pending?._multiSummary && <AnalyseBtn onClick={addItem} color="#6a9e6a">✓ Add to log</AnalyseBtn>}
+        {isPending && !pending?._multiSummary && pending?.text && !favSaved && !favourites.find(f=>(f.name||f.text)===pending.text) && (
+          <AnalyseBtn onClick={openSaveFav} color="#767676"><Icon name="star" size={15} color="#fff"/> Save</AnalyseBtn>
+        )}
+        {favSaved && <span style={{ fontSize:13, color:"#6a9e6a", display:"flex", alignItems:"center", gap:4, padding:"10px 0" }}><Icon name="check" size={15} color="#6a9e6a"/> Saved to favourites</span>}
       </div>
+
+      {/* Custom name input for saving favourites */}
+      {showFavNameInput && (
+        <div style={{ marginTop:10, padding:"12px 14px", background:"#f9f9f9", borderRadius:12, border:"1.5px solid #efefef" }}>
+          <div style={{ fontSize:12, color:"#767676", marginBottom:6 }}>Give this a name for your favourites (or leave blank to use the full description)</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <input
+              autoFocus
+              value={savingFavName}
+              onChange={e=>setSavingFavName(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter") confirmSaveFav(); if(e.key==="Escape") setShowFavNameInput(false); }}
+              placeholder={`e.g. "Spinach smoothie"`}
+              style={{ flex:1, padding:"9px 12px", borderRadius:10, border:"1.5px solid #efefef", background:"#fff", fontFamily:"inherit", fontSize:14, color:"#111111", outline:"none" }}
+            />
+            <button onClick={confirmSaveFav}
+              style={{ padding:"9px 16px", background:"#9ebd6e", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:700, cursor:"pointer" }}>
+              Save
+            </button>
+            <button onClick={()=>setShowFavNameInput(false)}
+              style={{ padding:"9px 12px", background:"none", border:"1.5px solid #efefef", borderRadius:10, fontSize:14, fontFamily:"inherit", color:"#767676", cursor:"pointer" }}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       {loading && <div style={{ marginTop:10 }}><Spinner /></div>}
 
       {isPending && (
@@ -1879,22 +1939,29 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
               const W = Math.max(calData.length*52, 300);
               return (
                 <ScrollRight>
-                  <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={avgY} y2={avgY} stroke="#9ebd6e44" strokeDasharray="4 3"/>
-                    <text x={4} y={avgY-3} fontSize={12} fill="#767676">avg {avgCals}</text>
-                    {calData.map((d,i)=>{
-                      const h=(d.cals/maxCals)*80;
-                      const over = d.cals > 2500;
-                      return (
-                        <g key={i}>
-                          <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5}
-                            fill={over ? "#e8457a" : "#9ebd6e"} opacity={d.cals ? 1 : 0.2}/>
-                          {d.cals > 0 && <text x={i*52+26} y={Math.max(88-h, 14)} textAnchor="middle" fontSize={12} fontWeight="600" fill={over?"#e8457a":"#9ebd6e"}>{d.cals}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
-                        </g>
-                      );
-                    })}
-                  </svg>
+                  {(() => {
+                    const pad=22, barH=80;
+                    const aY = pad + barH - (avgCals/maxCals)*barH;
+                    return (
+                    <svg width={W} height={140}>
+                      <line x1={0} x2={W} y1={aY} y2={aY} stroke="#9ebd6e44" strokeDasharray="4 3"/>
+                      <text x={4} y={aY-3} fontSize={12} fill="#767676">avg {avgCals}</text>
+                      {calData.map((d,i)=>{
+                        const h=(d.cals/maxCals)*barH;
+                        const over = d.cals > 2500;
+                        const barTop = pad + barH - h;
+                        return (
+                          <g key={i}>
+                            <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5}
+                              fill={over ? "#e8457a" : "#9ebd6e"} opacity={d.cals ? 1 : 0.2}/>
+                            {d.cals > 0 && <text x={i*52+26} y={Math.max(barTop-5, 13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.cals}</text>}
+                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    );
+                  })()}
                 </ScrollRight>
               );
             })()}
@@ -1911,22 +1978,29 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             const goalY = 90 - (10000/maxSteps)*80;
             return (
               <ScrollRight>
-                <svg width={W} height={130}>
-                  <line x1={0} x2={W} y1={goalY} y2={goalY} stroke="#4a86d844" strokeDasharray="4 3"/>
-                  <text x={4} y={goalY-3} fontSize={12} fill="#767676">10k goal</text>
-                  {stepsData.map((d,i)=>{
-                    const h=(d.s/maxSteps)*80;
-                    const met = d.s >= 10000;
-                    const label = d.s >= 1000 ? Math.round(d.s/100)/10 + "k" : String(d.s);
-                    return (
-                      <g key={i}>
-                        <rect x={i*52+13} y={90-h} width={26} height={h||2} rx={5} fill={met?"#9ebd6e":"#4a86d8"}/>
-                        <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={12} fontWeight="600" fill={met?"#9ebd6e":"#4a86d8"}>{label}</text>
-                        <text x={i*52+26} y={118} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
-                      </g>
-                    );
-                  })}
-                </svg>
+                {(() => {
+                  const pad=22, barH=80;
+                  const gY = pad + barH - (10000/maxSteps)*barH;
+                  return (
+                  <svg width={W} height={140}>
+                    <line x1={0} x2={W} y1={gY} y2={gY} stroke="#4a86d844" strokeDasharray="4 3"/>
+                    <text x={4} y={gY-3} fontSize={12} fill="#767676">10k goal</text>
+                    {stepsData.map((d,i)=>{
+                      const h=(d.s/maxSteps)*barH;
+                      const met = d.s >= 10000;
+                      const label = d.s >= 1000 ? Math.round(d.s/100)/10 + "k" : String(d.s);
+                      const barTop = pad + barH - h;
+                      return (
+                        <g key={i}>
+                          <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5} fill={met?"#9ebd6e":"#4a86d8"}/>
+                          <text x={i*52+26} y={Math.max(barTop-5,13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{label}</text>
+                          <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  );
+                })()}
               </ScrollRight>
             );
           })()}
@@ -1949,21 +2023,28 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                   <span style={{ fontSize:12, color:"#767676" }}>units this period</span>
                 </div>
                 <ScrollRight>
-                  <svg width={W} height={130}>
-                    <line x1={0} x2={W} y1={guideY} y2={guideY} stroke="#e8457a44" strokeDasharray="4 3"/>
-                    <text x={4} y={guideY-3} fontSize={12} fill="#767676">2u/day</text>
-                    {alcData.map((d,i)=>{
-                      const h=(d.u/maxAlc)*80;
-                      const col = d.u>6 ? "#e8457a" : d.u>2 ? "#f59c38" : "#6a9e6a";
-                      return (
-                        <g key={i}>
-                          <rect x={i*52+13} y={90-(h||0)} width={26} height={h||2} rx={5} fill={col} opacity={d.u>0?1:0.15}/>
-                          {d.u>0 && <text x={i*52+26} y={Math.max(88-h,14)} textAnchor="middle" fontSize={12} fontWeight="600" fill={col}>{d.u}</text>}
-                          <text x={i*52+26} y={118} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
-                        </g>
-                      );
-                    })}
-                  </svg>
+                  {(() => {
+                    const pad=22, barH=80;
+                    const gY = pad + barH - (2/maxAlc)*barH;
+                    return (
+                    <svg width={W} height={140}>
+                      <line x1={0} x2={W} y1={gY} y2={gY} stroke="#f59c3844" strokeDasharray="4 3"/>
+                      <text x={4} y={gY-3} fontSize={12} fill="#767676">2u/day</text>
+                      {alcData.map((d,i)=>{
+                        const h=(d.u/maxAlc)*barH;
+                        const col = d.u>6 ? "#e8457a" : d.u>2 ? "#f59c38" : "#6a9e6a";
+                        const barTop = pad + barH - (h||0);
+                        return (
+                          <g key={i}>
+                            <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5} fill={col} opacity={d.u>0?1:0.15}/>
+                            {d.u>0 && <text x={i*52+26} y={Math.max(barTop-5,13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.u}</text>}
+                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    );
+                  })()}
                 </ScrollRight>
                 <div style={{ display:"flex", gap:12, marginTop:8, fontSize:12 }}>
                   <span style={{color:"#111111", display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#6a9e6a",display:"inline-block"}}/>≤2u</span>
@@ -2103,9 +2184,6 @@ function SettingsScreen({ onClose }) {
     setFavs(getFavourites());
   };
 
-  const inputCost  = ((sessionUsage.input  / 1e6) * 2.37).toFixed(4);
-  const outputCost = ((sessionUsage.output / 1e6) * 11.85).toFixed(4);
-
   const SectionDivider = () => <div style={{ borderTop:"1px solid #efefef", margin:"20px 0" }} />;
 
   return (
@@ -2132,27 +2210,45 @@ function SettingsScreen({ onClose }) {
 
       {/* Usage */}
       <div>
-        <Label>Session Usage</Label>
-        <div style={{ background:"#f9f9f9", borderRadius:12, padding:"12px 14px", fontSize:13, color:"#111111", lineHeight:1.8 }}>
-          <div style={{ display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"#767676" }}>Input tokens</span>
-            <span style={{ fontWeight:600 }}>{sessionUsage.input.toLocaleString()} <span style={{ color:"#767676", fontWeight:400 }}>(~£{inputCost})</span></span>
-          </div>
-          <div style={{ display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"#767676" }}>Output tokens</span>
-            <span style={{ fontWeight:600 }}>{sessionUsage.output.toLocaleString()} <span style={{ color:"#767676", fontWeight:400 }}>(~£{outputCost})</span></span>
-          </div>
-          <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid #efefef", marginTop:6, paddingTop:6 }}>
-            <span style={{ color:"#767676" }}>Session total</span>
-            <span style={{ fontWeight:700, color:"#111111" }}>{estimateCost()}</span>
-          </div>
-          <div style={{ fontSize:12, color:"#767676", marginTop:8 }}>
-            Resets when you close or refresh the app.<br/>
-            <a href="https://console.anthropic.com/usage" target="_blank" rel="noopener"
-              style={{ color:"#111111", textDecoration:"none", fontWeight:600 }}>View full account usage →</a>
-          </div>
-        </div>
-        <div style={{ fontSize:12, color:"#767676", marginTop:6 }}>Pricing: ~£2.37/M input · ~£11.85/M output (Claude Sonnet 4)</div>
+        <Label>API Usage</Label>
+        {(() => {
+          const lifetime = getLifetimeUsage();
+          const lifetimeCost = calcCost(lifetime.input, lifetime.output);
+          const sessionCost = estimateCost();
+          const lifetimeInputK  = (lifetime.input  / 1000).toFixed(1);
+          const lifetimeOutputK = (lifetime.output / 1000).toFixed(1);
+          const sessionInputK   = (sessionUsage.input  / 1000).toFixed(1);
+          const sessionOutputK  = (sessionUsage.output / 1000).toFixed(1);
+          return (
+            <div>
+              {/* Lifetime total — the number that matters */}
+              <div style={{ background:"#f9f9f9", borderRadius:12, padding:"14px 16px", marginBottom:10 }}>
+                <div style={{ fontSize:12, color:"#767676", marginBottom:4 }}>Total spend (all time)</div>
+                <div style={{ fontSize:28, fontWeight:800, color:"#111111", lineHeight:1 }}>{lifetimeCost}</div>
+                <div style={{ fontSize:12, color:"#767676", marginTop:4 }}>{lifetimeInputK}k input · {lifetimeOutputK}k output tokens</div>
+              </div>
+              {/* This session */}
+              <div style={{ background:"#f9f9f9", borderRadius:12, padding:"12px 16px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <div style={{ fontSize:12, color:"#767676" }}>This session</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:"#111111" }}>{sessionCost}</div>
+                </div>
+                <div style={{ fontSize:12, color:"#767676" }}>{sessionInputK}k input · {sessionOutputK}k output</div>
+                <div style={{ fontSize:12, color:"#767676", marginTop:8, borderTop:"1px solid #efefef", paddingTop:8 }}>
+                  Pricing: ~£2.37/M input · ~£11.85/M output (Claude Sonnet 4)<br/>
+                  <a href="https://console.anthropic.com/usage" target="_blank" rel="noopener"
+                    style={{ color:"#111111", textDecoration:"none", fontWeight:600 }}>View full account usage →</a>
+                </div>
+              </div>
+              <div style={{ marginTop:8, display:"flex", justifyContent:"flex-end" }}>
+                <button onClick={()=>{ ls.set(USAGE_KEY, {input:0,output:0}); window.location.reload(); }}
+                  style={{ fontSize:12, color:"#767676", background:"none", border:"none", fontFamily:"inherit", cursor:"pointer", textDecoration:"underline" }}>
+                  Reset lifetime total
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <SectionDivider />
@@ -2242,12 +2338,13 @@ function SettingsScreen({ onClose }) {
           <div style={{ marginBottom:14, display:"flex", flexDirection:"column", gap:6 }}>
             {favs.map((f,i)=>(
               <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 12px", background:"#f9f9f9", borderRadius:10, border:"1.5px solid #efefef" }}>
-                <div>
-                  <div style={{ fontSize:14, color:"#111111" }}>{f.text}</div>
+                <div style={{ minWidth:0, flex:1 }}>
+                  <div style={{ fontSize:14, color:"#111111" }}>{f.name || f.text}</div>
+                  {f.name && f.text !== f.name && <div style={{ fontSize:11, color:"#aaaaaa", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.text}</div>}
                   <div style={{ fontSize:12, color:"#767676", marginTop:2 }}>{f.calories ? f.calories + " kcal" : "— kcal not set"}</div>
                 </div>
-                <button onClick={()=>removeFav(f.text)}
-                  style={{ background:"none", border:"none", color:"#111111", fontSize:18, padding:"4px 8px", cursor:"pointer", lineHeight:1 }}>✕</button>
+                <button onClick={()=>removeFav(f.name || f.text)}
+                  style={{ background:"none", border:"none", color:"#aaaaaa", fontSize:18, padding:"4px 8px", cursor:"pointer", lineHeight:1, flexShrink:0 }}>✕</button>
               </div>
             ))}
           </div>
@@ -2512,16 +2609,34 @@ function App() {
               ✦ Nourish
               {fitbitConnected && <span style={{ fontSize:12, color:"#767676", fontWeight:500, marginLeft:8, display:"inline-flex", alignItems:"center", gap:3 }}><Icon name="watch" size={14} color="#4a86d8" /> Fitbit</span>}
             </div>
-            <div style={{ fontSize:13, color:"#767676", marginTop:2, display:"flex", alignItems:"center", gap:8 }}>
-              {isToday ? "Today" : formatDate(currentDay)}
-              {!isToday && <button onClick={()=>{ setCurrentDay(today()); setTab("log"); }}
-                style={{ fontSize:12, padding:"2px 10px", borderRadius:20, background:"#9ebd6e", color:"#fff", border:"none", fontFamily:"inherit", fontWeight:600 }}>↩ today</button>}
-            </div>
           </div>
           <button onClick={()=>setShowSettings(true)}
             style={{ width:36, height:36, borderRadius:"50%", background:"#f5f5f5", border:"1px solid #efefef", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Icon name="settings" size={20} color="#767676" />
           </button>
+        </div>
+        {/* Date navigator */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+          <button onClick={()=>{ const d=new Date(currentDay+"T12:00:00"); d.setDate(d.getDate()-1); setCurrentDay(d.toISOString().split("T")[0]); setTab("log"); }}
+            style={{ width:30, height:30, borderRadius:"50%", background:"#f5f5f5", border:"1px solid #efefef", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="9,2 4,7 9,12" stroke="#767676" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{ flex:1, textAlign:"center", position:"relative" }}>
+            <input type="date" value={currentDay} max={today()} onChange={e=>{ if(e.target.value){ setCurrentDay(e.target.value); setTab("log"); }}}
+              style={{ position:"absolute", inset:0, opacity:0, cursor:"pointer", width:"100%", height:"100%" }} />
+            <div style={{ fontSize:13, fontWeight:600, color:"#111111", lineHeight:1 }}>
+              {isToday ? "Today" : formatDate(currentDay)}
+            </div>
+            <div style={{ fontSize:11, color:"#aaaaaa", marginTop:2 }}>tap to change date</div>
+          </div>
+          <button
+            onClick={()=>{ const d=new Date(currentDay+"T12:00:00"); d.setDate(d.getDate()+1); const next=d.toISOString().split("T")[0]; if(next<=today()){ setCurrentDay(next); setTab("log"); }}}
+            disabled={isToday}
+            style={{ width:30, height:30, borderRadius:"50%", background:isToday?"#fafafa":"#f5f5f5", border:"1px solid #efefef", display:"flex", alignItems:"center", justifyContent:"center", cursor:isToday?"default":"pointer", flexShrink:0, opacity:isToday?0.3:1 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="5,2 10,7 5,12" stroke="#767676" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          {!isToday && <button onClick={()=>{ setCurrentDay(today()); setTab("log"); }}
+            style={{ fontSize:11, padding:"3px 10px", borderRadius:20, background:"#9ebd6e", color:"#fff", border:"none", fontFamily:"inherit", fontWeight:600, flexShrink:0 }}>↩ today</button>}
         </div>
         <div style={{ display:"flex", gap:0 }}>
           {[["log","Log","log"],["history","History","history"],["insights","Insights","insights"]].map(([t,label,icon])=>(
