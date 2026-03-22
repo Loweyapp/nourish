@@ -1719,7 +1719,7 @@ function WeightTrendSection({ weightData, minW, maxW, allEntries }) {
                   <g key={i}>
                     <circle cx={i*52+26} cy={yFor(d.w)} r={4} fill={trendColor}/>
                     <text x={i*52+26} y={yFor(d.w)-8} textAnchor="middle" fontSize={12} fontWeight="600" fill={trendColor}>{d.w}</text>
-                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                    <text x={i*52+26} y={H-4} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
                   </g>
                 ))}
               </svg>
@@ -1808,7 +1808,7 @@ Be direct and specific. British English. 4-5 sentences total.`
               <text x={i*60+30} y={yFor(d.sys)-7} textAnchor="middle" fontSize={12} fill="#e8457a">{d.sys}</text>
               <text x={i*60+30} y={yFor(d.dia)+14} textAnchor="middle" fontSize={12} fill="#5a8ad0">{d.dia}</text>
               {d.pulse && <text x={i*60+30} y={yFor(d.dia)+24} textAnchor="middle" fontSize={12} fill="#767676">♥{d.pulse}</text>}
-              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+              <text x={i*60+30} y={H-4} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
             </g>);
           })}
         </svg>
@@ -1931,7 +1931,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                     <g key={i}>
                       <circle cx={i*52+26} cy={yFor(d.mood||1)} r={4} fill="#805d93"/>
                       <circle cx={i*52+26} cy={yFor(d.energy||1)} r={3} fill="#26b5a8"/>
-                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                      <text x={i*52+26} y={H+12} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
                     </g>
                   ))}
                 </svg>
@@ -1969,7 +1969,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                             <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5}
                               fill={over ? "#e8457a" : "#9ebd6e"} opacity={d.cals ? 1 : 0.2}/>
                             {d.cals > 0 && <text x={i*52+26} y={Math.max(barTop-5, 13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.cals}</text>}
-                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
                           </g>
                         );
                       })}
@@ -2008,7 +2008,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                         <g key={i}>
                           <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5} fill={met?"#9ebd6e":"#4a86d8"}/>
                           <text x={i*52+26} y={Math.max(barTop-5,13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{label}</text>
-                          <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                          <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
                         </g>
                       );
                     })}
@@ -2052,7 +2052,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                           <g key={i}>
                             <rect x={i*52+13} y={barTop} width={26} height={h||2} rx={5} fill={col} opacity={d.u>0?1:0.15}/>
                             {d.u>0 && <text x={i*52+26} y={Math.max(barTop-5,13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.u}</text>}
-                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.split(",")[0]}</text>
+                            <text x={i*52+26} y={pad+barH+18} textAnchor="middle" fontSize={12} fill="#767676">{d.d.slice(0,3)}</text>
                           </g>
                         );
                       })}
