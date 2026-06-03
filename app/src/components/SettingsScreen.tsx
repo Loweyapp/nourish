@@ -82,9 +82,18 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
       <div>
         <Label>Anthropic API Key</Label>
         <input type="password" value={key} onChange={e => setKey(e.target.value)}
-          style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1.5px solid #efefef', background: '#fff', fontFamily: 'monospace', fontSize: 14, color: '#111111', outline: 'none', marginBottom: 10 }} />
-        <button onClick={() => { saveApiKey(key.trim()); setKeySaved(true); setTimeout(() => setKeySaved(false), 2000) }}
-          style={{ padding: '10px 20px', background: '#9ebd6e', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', fontWeight: 600 }}>
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${key.trim() && !key.trim().startsWith('sk-ant-') ? '#e8457a' : '#efefef'}`, background: '#fff', fontFamily: 'monospace', fontSize: 14, color: '#111111', outline: 'none', marginBottom: 10 }} />
+        {key.trim() && !key.trim().startsWith('sk-ant-') && (
+          <div style={{ fontSize: 12, color: '#e8457a', marginBottom: 8 }}>Key should start with <span style={{ fontFamily: 'monospace' }}>sk-ant-</span></div>
+        )}
+        <button
+          onClick={() => {
+            const trimmed = key.trim()
+            if (!trimmed.startsWith('sk-ant-')) return
+            saveApiKey(trimmed); setKeySaved(true); setTimeout(() => setKeySaved(false), 2000)
+          }}
+          disabled={!key.trim().startsWith('sk-ant-')}
+          style={{ padding: '10px 20px', background: key.trim().startsWith('sk-ant-') ? '#9ebd6e' : '#e0e0e0', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', fontWeight: 600 }}>
           {keySaved ? 'Saved ✓' : 'Save key'}
         </button>
         <div style={{ marginTop: 10, fontSize: 12, color: '#767676', lineHeight: 1.7 }}>
