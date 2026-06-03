@@ -657,7 +657,7 @@ Builds `app/` with `npm ci && npm run build`, deploys `app/dist/` via `actions/d
 **Manual step required**: Settings → Pages → Source → change from "Deploy from a branch" to **GitHub Actions**. Do this once before the first merge to `main`. After that, every push to `main` auto-deploys.
 
 **Asset changes**:
-- `base: '/nourish/'` set in `app/vite.config.ts` — all JS/CSS bundles resolve correctly under the `/nourish/` subpath
+- `base` in `app/vite.config.ts` is environment-aware: `'/nourish/'` by default (GitHub Pages), `'/'` when `process.env.VERCEL` is set. Vercel injects this variable automatically during build, so PR previews work at root without any extra config.
 - Icons and manifest moved to `app/public/` so they're included in the build output
 - `app/index.html` href attributes changed from root-absolute (`/manifest.json`) to relative (`manifest.json`) so they resolve against the document base (`/nourish/`)
 - Root `index.html` and root `manifest.json` become dormant once the new workflow runs — they are not deleted yet (stability window)
