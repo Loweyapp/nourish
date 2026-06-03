@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import type { FoodItem, DrinkItem, Favourite } from '../types'
 import {
-  askClaude, getApiKey, r1,
+  askClaude, getApiKey, r1, extractJSON,
   getFavourites, addFavourite, incrementFavUseCount,
 } from '../lib'
 import { Section, Icon, Spinner, AnalyseBtn, HourSelect, AIBubble, ChatWidget } from './shared'
@@ -150,7 +150,7 @@ Be realistic. UK measurements and British English.`
       type ParsedSingle = { multi: false; type: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; units: number; drink_type?: string | null; abv?: number | null; volume_ml?: number | null; commentary?: string }
       type ParsedMultiItem = { text: string; type: string; suggested_time?: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; units: number; drink_type?: string | null; abv?: number | null; volume_ml?: number | null }
       type ParsedMulti = { multi: true; items: ParsedMultiItem[]; commentary?: string }
-      const parsed = JSON.parse(resp.replace(/```json|```/g, '').trim()) as ParsedSingle | ParsedMulti
+      const parsed = JSON.parse(extractJSON(resp)) as ParsedSingle | ParsedMulti
       if (parsed.multi) {
         const newFood: FoodItem[] = [], newDrinks: DrinkItem[] = []
         for (const item of parsed.items) {

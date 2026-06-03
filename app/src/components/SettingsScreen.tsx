@@ -11,7 +11,7 @@ import {
   getLifetimeUsage,
   ls, USAGE_KEY,
 } from '../lib'
-import { sessionUsage, calcCost, estimateCost, askClaude } from '../lib'
+import { sessionUsage, calcCost, estimateCost, askClaude, extractJSON } from '../lib'
 import { startGDriveAuth } from '../lib'
 
 interface SettingsScreenProps {
@@ -59,7 +59,7 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
           [{ role: 'user', content: `Estimate calories for: "${newFavText.trim()}"` }],
           'You are a nutrition expert. Return ONLY a JSON object with a single field: {"calories": <integer>}. Use a typical UK serving size. No markdown, no explanation.'
         )
-        const parsed = JSON.parse(resp.replace(/```json|```/g, '').trim()) as { calories?: number }
+        const parsed = JSON.parse(extractJSON(resp)) as { calories?: number }
         cals = parsed.calories || 0
       } catch { cals = 0 }
       setFavEstimating(false)
