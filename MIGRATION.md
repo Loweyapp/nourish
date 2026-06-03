@@ -5,8 +5,9 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | Phase 1 | Inventory, scaffold, plan | ✅ Done |
-| Phase 2 | Execute migration — move components, add types | ⏳ Pending |
-| Phase 3 | API key security, feature improvements | ⏳ Pending |
+| Phase 2 | Execute migration — move components, add types | ✅ Done |
+| Phase 3a | Ship migration — GH Pages, lint fix, extractJSON, manifest, archive, audits | ✅ Done |
+| Phase 3b | No-scale portion sizing | ⏳ Pending |
 
 ---
 
@@ -643,3 +644,84 @@ Each chunk should be small enough to verify against the live `index.html` side-b
 7. **React 19 vs CDN React 18**: The scaffold uses React 19.2 (via npm). The live app uses React 18.2 (via CDN). There should be no behavioural differences for the code in use, but worth a visual smoke test after migration.
 
 8. **`DraggableLayout` uses mutation pattern**: `renderSection(id)` is called at render time — fine in class components but the current implementation passes a closure that captures fresh props. Phase 2 must ensure this renders correctly in strict mode with the React 19 double-render in dev.
+
+---
+
+## 6. Phase 3a — Ship Migration
+
+### Task 0: GitHub Pages deployment
+
+**Workflow**: `.github/workflows/deploy.yml` — triggers on push to `main` and manual dispatch.  
+Builds `app/` with `npm ci && npm run build`, deploys `app/dist/` via `actions/deploy-pages@v4`.
+
+**Manual step required**: Settings → Pages → Source → change from "Deploy from a branch" to **GitHub Actions**. Do this once before the first merge to `main`. After that, every push to `main` auto-deploys.
+
+**Asset changes**:
+- `base` in `app/vite.config.ts` is environment-aware: `'/nourish/'` by default (GitHub Pages), `'/'` when `process.env.VERCEL` is set. Vercel injects this variable automatically during build, so PR previews work at root without any extra config.
+- Icons and manifest moved to `app/public/` so they're included in the build output
+- `app/index.html` href attributes changed from root-absolute (`/manifest.json`) to relative (`manifest.json`) so they resolve against the document base (`/nourish/`)
+- Root `index.html` and root `manifest.json` become dormant once the new workflow runs — they are not deleted yet (stability window)
+
+### Task 1: ESLint peer dependency fix
+
+Downgraded `eslint` and `@eslint/js` from `^10.x` to `^9.39.4`.  
+`eslint-plugin-react@7` only supports `^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7` — ESLint 10 was outside that range.
+
+**Vercel manual step**: Remove the `--legacy-peer-deps` override from Vercel's install command after this branch lands on `main`. It's no longer needed.
+
+### Task 2: `extractJSON` rewrite
+
+Replaced `resp.replace(/\`\`\`json|\`\`\`/g, '').trim()` with a character-walking brace-depth extractor in `app/src/lib/extractJSON.ts`.
+
+Handles: surrounding prose, code fences, nested structures, strings containing braces, escape sequences including `\\`. Throws a descriptive error if no valid JSON structure is found.
+
+16 unit tests at `app/src/lib/__tests__/extractJSON.test.ts`. Run with `npm test`.
+
+Added Vitest as dev dependency (`npm test` = `vitest run`).
+
+Wired into `FoodSection.tsx` (meal parsing) and `SettingsScreen.tsx` (calorie estimation).
+
+### Task 3: `manifest.json` colours
+
+`app/public/manifest.json` created with:
+- `background_color: "#f5f5f5"` (was `#fdf8f2`)
+- `theme_color: "#111111"` (was `#3d2b1a`)
+
+Root `manifest.json` is dormant after GH Pages cutover.
+
+### Task 4: Archive `nourish.html`
+
+Moved `nourish.html` → `archive/nourish.html`. This was the older parchment-themed prototype (warm-brown `#3d2b1a` colour scheme, fewer features — no BP section, no favourites, no stats bar, no GDrive, no coaching style, no token tracking, no multi-meal parsing). Kept as historical reference.
+
+### Task 5: Strict-mode double-invoke audit
+
+React 19 `<StrictMode>` double-invokes effects and state initialisers in development. Findings for every effect in `app/src/`:
+
+| Location | Effect | Double-invoke risk | Verdict |
+|----------|--------|--------------------|---------|
+| `App.tsx` | `handleOAuthCallback()` | Processes URL hash/params on first call, clears them with `history.replaceState`. Second call finds nothing and exits immediately. | ✅ Safe |
+| `App.tsx` | `autoBackup()` | Both calls run before the async backup completes, so both see "no recent backup" and fire. **Dev-only** (strict mode is disabled in the production build). | ℹ️ Dev-only double-backup |
+| `App.tsx` | `autoSyncFitbit()` | Same pattern: both calls see `lastFetch !== today()` and fire a Fitbit request. **Dev-only**. | ℹ️ Dev-only double-fetch |
+| `ScrollRight.tsx` | Sets `scrollLeft = scrollWidth` | Idempotent DOM mutation. | ✅ Safe |
+| `ChatWidget.tsx` | Scrolls bottom ref into view | Idempotent. | ✅ Safe |
+| `useEntries.ts` | `seedDummyData()` in `useState` initialiser | Guarded by `DUMMY_SEEDED_KEY` in localStorage; second invocation returns early. | ✅ Safe |
+
+The dev-only double-fire for `autoBackup` and `autoSyncFitbit` is not worth adding ref guards for — it would complicate verbatim-ported code to fix a dev-environment inconvenience. Production builds (via Vite) strip `StrictMode`.
+
+### Task 6: Settings API key update UI
+
+Confirmed: `SettingsScreen.tsx` already has the full API key management UI:
+- Password input with current key pre-filled
+- Save button that calls `saveApiKey(key.trim())`
+- Masked preview showing first 10 and last 4 characters + length
+- Basic `sk-ant-` prefix validation added (rejects save if key doesn't start with `sk-ant-`)
+
+---
+
+## 7. Remaining candidates (Phase 3b+)
+
+- **No-scale portion sizing** — Phase 3b
+- **Google Drive PKCE migration** — implicit flow deprecated by Google
+- **`weight` string→number migration** — one-time localStorage migration
+- **PWA service worker** — app has manifest but no SW; doesn't work offline
+- **API key security** — currently plaintext in localStorage; consider a proxy
