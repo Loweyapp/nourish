@@ -6,7 +6,7 @@ interface EmojiOption {
 
 interface EmojiPickerProps {
   options: EmojiOption[]
-  value?: number
+  value?: number | undefined
   onChange: (v: number) => void
 }
 

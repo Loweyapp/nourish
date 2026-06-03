@@ -1,8 +1,8 @@
 import Spinner from './Spinner'
 
 interface AIBubbleProps {
-  text?: string
-  loading?: boolean
+  text?: string | undefined
+  loading?: boolean | undefined
 }
 
 export default function AIBubble({ text, loading }: AIBubbleProps) {

@@ -4,8 +4,8 @@ import Spinner from './Spinner'
 
 interface ChatWidgetProps {
   systemPrompt: string
-  contextSummary?: string
-  placeholder?: string
+  contextSummary?: string | undefined
+  placeholder?: string | undefined
 }
 
 export default function ChatWidget({ systemPrompt, contextSummary, placeholder = 'Ask a follow-up…' }: ChatWidgetProps) {
