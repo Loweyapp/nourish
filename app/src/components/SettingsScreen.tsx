@@ -61,7 +61,7 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
         )
         const parsed = JSON.parse(resp.replace(/```json|```/g, '').trim()) as { calories?: number }
         cals = parsed.calories || 0
-      } catch (_e) { cals = 0 }
+      } catch { cals = 0 }
       setFavEstimating(false)
     }
     addFavourite({ text: newFavText.trim(), calories: cals ?? 0, protein_g: 0, carbs_g: 0, fat_g: 0, units: 0 })
@@ -182,7 +182,7 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
             <div style={{ fontSize: 13, color: '#111111', marginBottom: 6 }}>✓ Connected</div>
             {lastBackup && <div style={{ fontSize: 12, color: '#767676', marginBottom: 10 }}>Last backup: {new Date(lastBackup).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={manualBackup} disabled={backing}
+              <button onClick={() => { void manualBackup() }} disabled={backing}
                 style={{ padding: '10px 20px', background: backing ? '#e0e0e0' : '#4a86d8', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', fontWeight: 600 }}>
                 {backing ? 'Backing up…' : '↑ Back up now'}
               </button>
@@ -248,7 +248,7 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
               placeholder="AI estimate"
               style={{ width: '100%', padding: '9px 11px', borderRadius: 10, border: '1.5px solid #efefef', background: '#fff', fontFamily: 'inherit', fontSize: 13, color: '#111111', outline: 'none' }} />
           </div>
-          <button onClick={addFav} disabled={!newFavText.trim() || favEstimating}
+          <button onClick={() => { void addFav() }} disabled={!newFavText.trim() || favEstimating}
             style={{ padding: '9px 16px', background: (!newFavText.trim() || favEstimating) ? '#e0e0e0' : '#9ebd6e', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', fontWeight: 600, flexShrink: 0 }}>
             {favEstimating ? 'Estimating…' : '+ Add'}
           </button>

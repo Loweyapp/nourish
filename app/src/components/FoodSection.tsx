@@ -186,8 +186,8 @@ Be realistic. UK measurements and British English.`
     const newFood: FoodItem[] = [], newDrinks: DrinkItem[] = []
     toAdd.forEach(fav => {
       const item = { text: fav.name || fav.text, calories: fav.calories || 0, protein_g: fav.protein_g || 0, carbs_g: fav.carbs_g || 0, fat_g: fav.fat_g || 0, units: fav.units || 0, time: nowTime }
-      if ((fav.units ?? 0) > 0) newDrinks.push(item as DrinkItem)
-      else newFood.push(item as FoodItem)
+      if ((fav.units ?? 0) > 0) newDrinks.push(item)
+      else newFood.push(item)
     })
     if (newFood.length) onUpdate([...foodItems, ...newFood])
     if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks])
@@ -242,7 +242,7 @@ Be realistic. UK measurements and British English.`
     ? `Item: "${pending.text}". ${pending.calories} kcal, ${pending.protein_g}g protein, ${pending.carbs_g}g carbs, ${pending.fat_g}g fat${pendingDrink ? `, ${pendingDrink.units} alcohol units` : ''}. Assessment: ${pending.commentary}`
     : pendingDrink ? `Drink: "${pendingDrink.text}". ${pendingDrink.units} units, ${pendingDrink.calories} kcal. ${pendingDrink.commentary}` : null
 
-  type AllItem = (FoodItem | DrinkItem) & { _type: 'food' | 'drink'; _i: number }
+  type AllItem = (FoodItem  ) & { _type: 'food' | 'drink'; _i: number }
   const allItems: AllItem[] = [
     ...foodItems.map((f, i) => ({ ...f, _type: 'food' as const, _i: i })),
     ...alcoholItems.map((a, i) => ({ ...a, _type: 'drink' as const, _i: i })),
@@ -259,9 +259,9 @@ Be realistic. UK measurements and British English.`
           </div>
           {((item as FoodItem).protein_g || (item as FoodItem).carbs_g || (item as FoodItem).fat_g) ? (
             <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
-              {(item as FoodItem).protein_g! > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#edfaf2', color: '#2d6a3f', fontWeight: 600 }}>{Math.round((item as FoodItem).protein_g!)}g P</span>}
-              {(item as FoodItem).carbs_g! > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#eef4ff', color: '#1a4090', fontWeight: 600 }}>{Math.round((item as FoodItem).carbs_g!)}g C</span>}
-              {(item as FoodItem).fat_g! > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#ffeef4', color: '#801030', fontWeight: 600 }}>{Math.round((item as FoodItem).fat_g!)}g F</span>}
+              {(item as FoodItem).protein_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#edfaf2', color: '#2d6a3f', fontWeight: 600 }}>{Math.round((item as FoodItem).protein_g)}g P</span>}
+              {(item as FoodItem).carbs_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#eef4ff', color: '#1a4090', fontWeight: 600 }}>{Math.round((item as FoodItem).carbs_g)}g C</span>}
+              {(item as FoodItem).fat_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#ffeef4', color: '#801030', fontWeight: 600 }}>{Math.round((item as FoodItem).fat_g)}g F</span>}
             </div>
           ) : null}
         </div>

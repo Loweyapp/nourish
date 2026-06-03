@@ -24,7 +24,7 @@ export function startGDriveAuth(): void {
     state:         'gdrive_auth',
     prompt:        'consent',
   })
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString()
 }
 
 async function findOrCreateFolder(token: string): Promise<string> {

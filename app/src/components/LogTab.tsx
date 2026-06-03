@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { DayEntry, FoodItem, DrinkItem, FitbitData } from '../types'
+import type { DayEntry, FitbitData } from '../types'
 import { buildDayContext, LOG_LAYOUT_KEY } from '../lib'
 import DraggableLayout from './DraggableLayout'
 import FoodSection from './FoodSection'
@@ -26,11 +26,11 @@ export default function LogTab({ entry, allEntries, currentDay, onChange, fitbit
 
   const renderSection = (id: string) => {
     switch (id) {
-      case 'food': return <FoodSection foodItems={(entry.food ?? []) as FoodItem[]} onUpdate={(food) => onChange({ ...entry, food })} alcoholItems={(entry.alcohol ?? []) as DrinkItem[]} onAlcoholUpdate={(alcohol) => onChange({ ...entry, alcohol })} dayContext={dayContext} fitbitData={entry.fitbit} />
+      case 'food': return <FoodSection foodItems={(entry.food ?? [])} onUpdate={(food) => onChange({ ...entry, food })} alcoholItems={(entry.alcohol ?? [])} onAlcoholUpdate={(alcohol) => onChange({ ...entry, alcohol })} dayContext={dayContext} fitbitData={entry.fitbit} />
       case 'fitbit': return <FitbitSection fitbitData={entry.fitbit} onUpdate={updateFitbit} connected={fitbitConnected} />
-      case 'mood': return <MoodSection entry={entry as Parameters<typeof MoodSection>[0]['entry']} onUpdate={(d) => onChange({ ...entry, ...d } as DayEntry)} dayContext={dayContext} />
-      case 'exercise': return <ExerciseSection entry={entry as Parameters<typeof ExerciseSection>[0]['entry']} onUpdate={(d) => onChange({ ...entry, ...d } as DayEntry)} dayContext={dayContext} />
-      case 'weight': return <WeightSection entry={entry as Parameters<typeof WeightSection>[0]['entry']} allEntries={allEntries} currentDay={currentDay} onUpdate={(d) => onChange({ ...entry, ...d } as DayEntry)} dayContext={dayContext} />
+      case 'mood': return <MoodSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
+      case 'exercise': return <ExerciseSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
+      case 'weight': return <WeightSection entry={entry} allEntries={allEntries} currentDay={currentDay} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
       case 'bp': return <BPSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} />
       default: return null
     }

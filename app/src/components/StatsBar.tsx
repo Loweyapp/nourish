@@ -4,6 +4,31 @@ import type { DayEntry } from '../types'
 import { today } from '../lib'
 import { Icon } from './shared'
 
+const Divider = () => <div style={{ width: 1, background: '#e8e8e8', margin: '4px 0' }} />
+
+interface StatProps {
+  label: string
+  value: string | number
+  unit?: string | undefined
+  warn?: boolean | undefined
+  onClick?: (() => void) | undefined
+  clickable?: boolean | undefined
+  icon?: ReactNode | undefined
+}
+
+const Stat = ({ label, value, unit, warn, onClick, clickable, icon }: StatProps) => (
+  <div onClick={onClick} style={{ flex: '1 1 0', textAlign: 'center', minWidth: 0, padding: '10px 2px', cursor: clickable ? 'pointer' : 'default', borderRadius: clickable ? 8 : 0 }}>
+    {icon && <div style={{ lineHeight: 1, marginBottom: 4, display: 'flex', justifyContent: 'center', opacity: 0.7 }}>{icon}</div>}
+    <div style={{ fontSize: 18, fontWeight: 800, color: warn ? '#e8457a' : '#111111', lineHeight: 1.1 }}>
+      {value}
+      {unit && <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 1, opacity: 0.7 }}>{unit}</span>}
+    </div>
+    <div style={{ fontSize: 12, color: '#444444', marginTop: 4, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+      {label}{clickable ? ' ⇄' : ''}
+    </div>
+  </div>
+)
+
 export default function StatsBar({ entries }: { entries: Record<string, DayEntry> }) {
   const [period, setPeriod] = useState('day')
   const [stepsMode, setStepsMode] = useState('steps')
@@ -35,31 +60,6 @@ export default function StatsBar({ entries }: { entries: Record<string, DayEntry
   const pints = units ? (units / 2.3).toFixed(1) : null
 
   const warnUnits = units > (14 / 7) * (period === 'day' ? 1 : period === 'week' ? 7 : 30)
-
-  const Divider = () => <div style={{ width: 1, background: '#e8e8e8', margin: '4px 0' }} />
-
-  interface StatProps {
-    label: string
-    value: string | number
-    unit?: string
-    warn?: boolean
-    onClick?: () => void
-    clickable?: boolean
-    icon?: ReactNode
-  }
-
-  const Stat = ({ label, value, unit, warn, onClick, clickable, icon }: StatProps) => (
-    <div onClick={onClick} style={{ flex: '1 1 0', textAlign: 'center', minWidth: 0, padding: '10px 2px', cursor: clickable ? 'pointer' : 'default', borderRadius: clickable ? 8 : 0 }}>
-      {icon && <div style={{ lineHeight: 1, marginBottom: 4, display: 'flex', justifyContent: 'center', opacity: 0.7 }}>{icon}</div>}
-      <div style={{ fontSize: 18, fontWeight: 800, color: warn ? '#e8457a' : '#111111', lineHeight: 1.1 }}>
-        {value}
-        {unit && <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 1, opacity: 0.7 }}>{unit}</span>}
-      </div>
-      <div style={{ fontSize: 12, color: '#444444', marginTop: 4, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-        {label}{clickable ? ' ⇄' : ''}
-      </div>
-    </div>
-  )
 
   return (
     <div style={{ background: '#ffffff', borderTop: '1px solid #efefef', padding: '8px 16px 10px' }}>

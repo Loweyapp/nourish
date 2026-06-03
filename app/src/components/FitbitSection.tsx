@@ -13,6 +13,40 @@ interface FitbitSectionProps {
   connected: boolean
 }
 
+interface ArcProps {
+  value: number
+  max: number
+  color: string
+  size?: number
+  label: string
+  sublabel: string
+}
+
+function Arc({ value, max, color, size = 90, label, sublabel }: ArcProps) {
+  const pct = Math.min(1, value / max)
+  const r = (size - 14) / 2
+  const cx = size / 2, cy = size / 2
+  const startAngle = -210, totalAngle = 240
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const arcPath = (angle: number) => {
+    const a = toRad(startAngle + angle)
+    return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
+  }
+  const trackD = `M ${arcPath(0)} A ${r} ${r} 0 ${totalAngle > 180 ? 1 : 0} 1 ${arcPath(totalAngle)}`
+  const fillAngle = pct * totalAngle
+  const fillD = `M ${arcPath(0)} A ${r} ${r} 0 ${fillAngle > 180 ? 1 : 0} 1 ${arcPath(fillAngle)}`
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <svg width={size} height={size}>
+        <path d={trackD} fill="none" stroke="#efefef" strokeWidth="8" strokeLinecap="round" />
+        <path d={fillD} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" />
+        <text x={cx} y={cy - 4} textAnchor="middle" fill="#111111" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill="#767676" fontSize={12}>{sublabel}</text>
+      </svg>
+    </div>
+  )
+}
+
 export default function FitbitSection({ fitbitData, onUpdate, connected }: FitbitSectionProps) {
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState('')
@@ -48,40 +82,6 @@ export default function FitbitSection({ fitbitData, onUpdate, connected }: Fitbi
 
   const f = fitbitData
   const fetchTime = f?.fetchedAt ? new Date(f.fetchedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : null
-
-  interface ArcProps {
-    value: number
-    max: number
-    color: string
-    size?: number
-    label: string
-    sublabel: string
-  }
-
-  const Arc = ({ value, max, color, size = 90, label, sublabel }: ArcProps) => {
-    const pct = Math.min(1, value / max)
-    const r = (size - 14) / 2
-    const cx = size / 2, cy = size / 2
-    const startAngle = -210, totalAngle = 240
-    const toRad = (deg: number) => (deg * Math.PI) / 180
-    const arcPath = (angle: number) => {
-      const a = toRad(startAngle + angle)
-      return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
-    }
-    const trackD = `M ${arcPath(0)} A ${r} ${r} 0 ${totalAngle > 180 ? 1 : 0} 1 ${arcPath(totalAngle)}`
-    const fillAngle = pct * totalAngle
-    const fillD = `M ${arcPath(0)} A ${r} ${r} 0 ${fillAngle > 180 ? 1 : 0} 1 ${arcPath(fillAngle)}`
-    return (
-      <div style={{ textAlign: 'center' }}>
-        <svg width={size} height={size}>
-          <path d={trackD} fill="none" stroke="#efefef" strokeWidth="8" strokeLinecap="round" />
-          <path d={fillD} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" />
-          <text x={cx} y={cy - 4} textAnchor="middle" fill="#111111" fontSize={size > 80 ? 15 : 12} fontWeight="700">{label}</text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fill="#767676" fontSize={12}>{sublabel}</text>
-        </svg>
-      </div>
-    )
-  }
 
   return (
     <Section title="FITBIT" accent="#4a86d8">

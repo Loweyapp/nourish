@@ -27,7 +27,7 @@ export const ls = {
   get: <T>(k: string, fallback: T): T => {
     try {
       const v = localStorage.getItem(k)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+       
       return v ? (JSON.parse(v) as T) : fallback
     } catch {
       return fallback
@@ -123,7 +123,7 @@ export function addFavourite(fav: Omit<Favourite, 'useCount'> & { useCount?: num
   }
   // Also prevent duplicate names
   if (favs.find((f) => (f.name || f.text).toLowerCase() === newName)) return
-  saveFavourites([...favs, { ...fav, useCount: 0 } as Favourite])
+  saveFavourites([...favs, { ...fav, useCount: 0 }])
 }
 
 export function incrementFavUseCount(texts: string[]): void {

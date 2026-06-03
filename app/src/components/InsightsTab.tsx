@@ -218,7 +218,7 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
   const moodData = [...days].reverse().map(([d, e]) => ({ d: formatDate(d), mood: e.mood ?? 0, energy: e.energy ?? 0 }))
   const calData = [...days].reverse().map(([d, e]) => ({ d: formatDate(d), cals: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) }))
   const weightData: WD[] = [...days].filter(([, e]) => e.weight).reverse().map(([d, e]) => ({ d: formatDate(d), w: parseFloat(e.weight!) }))
-  const stepsData = [...days].filter(([, e]) => e.fitbit?.steps).reverse().map(([d, e]) => ({ d: formatDate(d), s: e.fitbit!.steps! }))
+  const stepsData = [...days].filter(([, e]) => e.fitbit?.steps).reverse().map(([d, e]) => ({ d: formatDate(d), s: e.fitbit!.steps }))
   const alcData = [...days].reverse().map(([d, e]) => ({ d: formatDate(d), u: parseFloat(((e.alcohol ?? []).reduce((s, a) => s + (a.units || 0), 0)).toFixed(1)) }))
   const bpData: BD[] = [...days].filter(([, e]) => e.bpSystolic && e.bpDiastolic).reverse().map(([d, e]) => ({ d: formatDate(d), sys: e.bpSystolic!, dia: e.bpDiastolic!, pulse: e.bpPulse ?? null }))
 

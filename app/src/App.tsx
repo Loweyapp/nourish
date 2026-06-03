@@ -23,8 +23,11 @@ export default function App() {
   const { entries, updateEntry, handleOAuthCallback, autoBackup, autoSyncFitbit } = useEntries()
   const fitbitConnected = !!getFitbitToken()
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { handleOAuthCallback() }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { autoBackup() }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { autoSyncFitbit(fitbitConnected) }, [])
 
   if (!hasKey) return <ApiKeyScreen onSave={() => setHasKey(true)} />

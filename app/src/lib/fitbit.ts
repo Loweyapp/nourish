@@ -39,7 +39,7 @@ export function fitbitAuthUrl(challenge: string): string {
     code_challenge_method: 'S256',
     expires_in: '604800',
   })
-  return 'https://www.fitbit.com/oauth2/authorize?' + p
+  return 'https://www.fitbit.com/oauth2/authorize?' + p.toString()
 }
 
 type FitbitTokenResponse = {
@@ -102,7 +102,7 @@ export async function fitbitGet(path: string): Promise<FitbitApiResponse> {
   try {
     res = await fetch(FITBIT_PROXY + path, { headers: { Authorization: 'Bearer ' + token } })
   } catch (netErr: unknown) {
-    throw new Error('Network error: ' + (netErr instanceof Error ? netErr.message : String(netErr)))
+    throw new Error('Network error: ' + (netErr instanceof Error ? netErr.message : String(netErr)), { cause: netErr })
   }
   if (res.status === 401) { clearFitbitToken(); throw new Error('Fitbit token expired — please reconnect') }
   let data: FitbitApiResponse
