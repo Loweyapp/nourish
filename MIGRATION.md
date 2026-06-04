@@ -77,6 +77,20 @@ Natural-language hand-portion descriptions in food entry. The idea: instead of w
 
 No design work done yet — start with a brief before building.
 
+### Blood pressure — needs a rethink
+
+The current BP model (one set of readings per day) doesn't match real clinical practice. Issues to solve together as a single piece of work:
+
+1. **Multiple readings per session** — clinical best practice is to take 3 readings per sitting and average them. The current UI takes one reading. Need to support entering 2-3 readings and automatically averaging them before storing.
+
+2. **Multiple sessions per day** — likely 1-3 times daily (morning, after lunch, before bed). Storing a single daily value doesn't capture this. Need a list of timestamped sessions per day, each with its own average. The Insights graph would then show the morning/midday/evening pattern, which is clinically useful (BP naturally varies through the day and medication timing affects it).
+
+3. **Graphs with uneven time gaps** — all charts currently plot data points at equal horizontal spacing, so a gap of two weeks looks the same as a gap of one day. Need either time-proportional x-axis spacing, or visual markers indicating gaps, so the trend shape isn't misleading.
+
+4. **BP graph hidden until 2+ readings** — currently the Insights BP section doesn't appear until there are 2 days of data. Fixed in v1.0.5 to show with 1 reading. But the multi-session redesign above will change this again.
+
+No design work done yet — start with a brief covering the data model before building.
+
 ### Ideas for later
 
 - **Fitbit background sync** — currently syncs once on app open (today only). Should re-sync every few hours while the app is open so step count, heart rate etc. stay up to date throughout the day. Simple interval-based refresh.
