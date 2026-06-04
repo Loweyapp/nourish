@@ -7,7 +7,9 @@ type SRConstructor = new () => SR
 declare const webkitSpeechRecognition: SRConstructor | undefined
 
 function formatNoteTime(timestamp: string): string {
-  return new Date(timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return new Date(timestamp).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  })
 }
 
 interface JournalSectionProps {
@@ -102,7 +104,9 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
 
       {notes.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-          {notes.map((note, i) => (
+          {[...notes].reverse().map((note, _ri) => {
+            const i = notes.length - 1 - _ri
+            return (
             <div key={i} style={{ background: '#f9f9f9', borderRadius: 12, border: '1.5px solid #efefef', padding: '10px 12px' }}>
               {editIdx === i ? (
                 <div>
@@ -128,7 +132,8 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
