@@ -79,13 +79,16 @@ No design work done yet — start with a brief before building.
 
 ### Ideas for later
 
+- **Fitbit background sync** — currently syncs once on app open (today only). Should re-sync every few hours while the app is open so step count, heart rate etc. stay up to date throughout the day. Simple interval-based refresh.
+
+- **More Fitbit heart data** — currently fetching steps, sleep, resting HR, active minutes, calories burned. Worth adding: heart rate variability (HRV — low HRV flags stress/poor recovery), cardio fitness score / VO2 max estimate, heart rate zone minutes (fat burn / cardio / peak), SpO2 / blood oxygen (overnight, device-dependent), skin temperature deviation. Combined with BP readings, sleep quality, and the daily journal, the AI would have a much more complete picture of cardiovascular health. Needs checking which endpoints the Cloudflare Worker proxy currently allows.
+
 - **Daily journal / how-am-I-feeling notes** — a free-text notes area on the Log tab for each day. Write or dictate how you feel (morning, evening, or any time). The notes should be available to the AI when generating insights, so it can spot patterns (e.g. headaches correlating with gluten days, fatigue correlating with poor sleep). Needs typed input + voice dictation. No design work done yet.
 
 - **UI simplification** — the app feels busy; audit each screen for clutter and reduce cognitive load. No specific brief yet — start by identifying what can be hidden, collapsed, or removed entirely before redesigning.
 
 - **M3 Expressive UI redesign** — full visual overhaul aligned with Material Design 3 Expressive (rounded shapes, dynamic colour, expressive typography). No design work done yet; start with a Figma brief.
 - **Voice / dictation food entry** — speak a meal description instead of typing it. Likely Web Speech API → text → existing Claude analysis pipeline. Simple path; no design work done.
-- **Dates on Insights graphs** — x-axis labels showing actual dates on the BP and alcohol trend charts, so you can tell when data is from at a glance. Currently the graphs show data points with no time reference.
 
 ### Deferred candidates
 
