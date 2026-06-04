@@ -8,6 +8,7 @@ import MoodSection from './MoodSection'
 import ExerciseSection from './ExerciseSection'
 import WeightSection from './WeightSection'
 import BPSection from './BPSection'
+import JournalSection from './JournalSection'
 
 interface LogTabProps {
   entry: DayEntry
@@ -17,7 +18,7 @@ interface LogTabProps {
   fitbitConnected: boolean
 }
 
-const LOG_DEFAULT = ['food', 'fitbit', 'mood', 'exercise', 'weight', 'bp']
+const LOG_DEFAULT = ['food', 'fitbit', 'mood', 'exercise', 'weight', 'bp', 'journal']
 
 export default function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected }: LogTabProps) {
   const [editLayout, setEditLayout] = useState(false)
@@ -32,6 +33,7 @@ export default function LogTab({ entry, allEntries, currentDay, onChange, fitbit
       case 'exercise': return <ExerciseSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
       case 'weight': return <WeightSection entry={entry} allEntries={allEntries} currentDay={currentDay} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
       case 'bp': return <BPSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} />
+      case 'journal': return <JournalSection entry={entry} currentDay={currentDay} onUpdate={(d) => onChange({ ...entry, ...d })} />
       default: return null
     }
   }
