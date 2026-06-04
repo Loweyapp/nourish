@@ -6,7 +6,6 @@ import {
 } from '../lib'
 import { Section, Spinner, AIBubble, ChatWidget, ScrollRight } from './shared'
 import DraggableLayout from './DraggableLayout'
-import GPReportModal from './GPReportModal'
 
 const MOODS = [
   { emoji: '😴', label: 'Exhausted', value: 1 },
@@ -214,7 +213,6 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
   const [analysed, setAnalysed] = useState(false)
   const [error, setError] = useState('')
   const [editLayout, setEditLayout] = useState(false)
-  const [showGPReport, setShowGPReport] = useState(false)
 
   const days = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14)
   const moodData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), mood: e.mood ?? 0, energy: e.energy ?? 0 }))
@@ -447,18 +445,12 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
 
   return (
     <div>
-      {showGPReport && <GPReportModal entries={entries} onClose={() => setShowGPReport(false)} />}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editLayout ? 12 : 0 }}>
-        <button onClick={() => setShowGPReport(true)}
-          style={{ padding: '7px 16px', background: '#5a9ea0', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>
-          📋 GP report
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: editLayout ? 12 : 0 }}>
         <button onClick={() => setEditLayout(v => !v)}
-          style={{ background: editLayout ? '#6a9e6a' : 'none', border: editLayout ? 'none' : '1.5px solid #efefef', color: editLayout ? '#fff' : '#767676', borderRadius: 10, padding: '6px 14px', fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>
+          style={{ background: editLayout ? '#6a9e6a' : 'none', border: editLayout ? 'none' : '1.5px solid #efefef', color: editLayout ? '#fff' : '#767676', borderRadius: 10, padding: '6px 14px', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, marginBottom: editLayout ? 0 : 12 }}>
           {editLayout ? '✓ Done' : '✎ Edit layout'}
         </button>
       </div>
-      {!editLayout && <div style={{ marginBottom: 12 }} />}
       {editLayout && (
         <div style={{ fontSize: 12, color: '#767676', marginBottom: 12, textAlign: 'center' }}>
           Use the ↑↓ buttons to reorder sections

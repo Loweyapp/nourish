@@ -2,18 +2,18 @@ import { useState, useRef } from 'react'
 import type { DayEntry, JournalNote } from '../types'
 import { Section } from './shared'
 
-type SR = { start(): void; stop(): void; lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: (() => void) | null; onend: (() => void) | null }
+type SR = { start(): void; stop(): void; lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: Event) => void) | null; onend: (() => void) | null }
 type SRConstructor = new () => SR
 declare const webkitSpeechRecognition: SRConstructor | undefined
+
+function formatNoteTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
 
 interface JournalSectionProps {
   entry: DayEntry
   currentDay: string
   onUpdate: (d: Partial<DayEntry>) => void
-}
-
-function formatNoteTime(timestamp: string): string {
-  return new Date(timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function JournalSection({ entry, currentDay, onUpdate }: JournalSectionProps) {
@@ -22,14 +22,17 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const recognitionRef = useRef<SR | null>(null)
+  const shouldRestartRef = useRef(false)
   const notes = entry.notes ?? []
+
+  const isToday = currentDay === new Date().toISOString().split('T')[0]
 
   const save = () => {
     const trimmed = text.trim()
     if (!trimmed) return
     const note: JournalNote = {
       text: trimmed,
-      timestamp: new Date().toISOString().replace('Z', '').slice(0, 19) + '',
+      timestamp: new Date().toISOString().slice(0, 19),
     }
     onUpdate({ notes: [...notes, note] })
     setText('')
@@ -42,36 +45,54 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
   const saveEdit = (idx: number) => {
     const trimmed = editText.trim()
     if (!trimmed) return
-    const updated = notes.map((n, i) => i === idx ? { ...n, text: trimmed } : n)
-    onUpdate({ notes: updated })
+    onUpdate({ notes: notes.map((n, i) => i === idx ? { ...n, text: trimmed } : n) })
     setEditIdx(null)
   }
 
-  const startDictation = () => {
-    const SRClass: SRConstructor | undefined = typeof webkitSpeechRecognition !== 'undefined' ? webkitSpeechRecognition : undefined
-    if (!SRClass) { alert('Speech recognition is not supported in this browser. Try Chrome on Android or desktop.'); return }
+  const getSRClass = (): SRConstructor | null => {
+    if (typeof webkitSpeechRecognition !== 'undefined') return webkitSpeechRecognition
+    if (typeof window !== 'undefined' && 'SpeechRecognition' in window) return (window as unknown as { SpeechRecognition: SRConstructor }).SpeechRecognition
+    return null
+  }
+
+  const startRecognition = (SRClass: SRConstructor) => {
     const r = new SRClass()
     r.lang = 'en-GB'
-    r.continuous = true
+    r.continuous = false
     r.interimResults = false
     r.onresult = (e: SpeechRecognitionEvent) => {
       const transcript = Array.from(e.results).map(res => res[0]?.transcript ?? '').join(' ')
-      setText(prev => (prev ? prev + ' ' : '') + transcript)
+      if (transcript.trim()) setText(prev => (prev.trim() ? prev.trim() + ' ' : '') + transcript.trim())
     }
-    r.onerror = () => { setRecording(false) }
-    r.onend = () => { setRecording(false) }
+    r.onerror = () => { /* ignore — onend will handle restart */ }
+    r.onend = () => {
+      // Auto-restart if user hasn't tapped stop
+      if (shouldRestartRef.current) {
+        try { r.start() } catch { /* already stopped */ }
+      } else {
+        setRecording(false)
+      }
+    }
     r.start()
     recognitionRef.current = r
-    setRecording(true)
   }
 
-  const stopDictation = () => {
-    recognitionRef.current?.stop()
-    setRecording(false)
+  const toggleDictation = () => {
+    if (recording) {
+      shouldRestartRef.current = false
+      recognitionRef.current?.stop()
+      setRecording(false)
+    } else {
+      const SRClass = getSRClass()
+      if (!SRClass) {
+        alert('Speech recognition is not supported in this browser. Try Chrome on Android or desktop.')
+        return
+      }
+      shouldRestartRef.current = true
+      setRecording(true)
+      startRecognition(SRClass)
+    }
   }
-
-  // Determine if currentDay is today (for timestamping)
-  const isToday = currentDay === new Date().toISOString().split('T')[0]
 
   return (
     <Section title="JOURNAL" accent="#5a9ea0">
@@ -79,7 +100,6 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
         How are you feeling? Note symptoms, energy, sleep quality, anything that might be relevant.
       </div>
 
-      {/* Existing notes */}
       {notes.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
           {notes.map((note, i) => (
@@ -97,9 +117,7 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
                 </div>
               ) : (
                 <div>
-                  <div style={{ fontSize: 11, color: '#aaaaaa', marginBottom: 4, fontWeight: 500 }}>
-                    {formatNoteTime(note.timestamp)}
-                  </div>
+                  <div style={{ fontSize: 11, color: '#aaaaaa', marginBottom: 4, fontWeight: 500 }}>{formatNoteTime(note.timestamp)}</div>
                   <div style={{ fontSize: 13, color: '#111111', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.text}</div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                     <button onClick={() => { setEditIdx(i); setEditText(note.text) }}
@@ -114,32 +132,30 @@ export default function JournalSection({ entry, currentDay, onUpdate }: JournalS
         </div>
       )}
 
-      {/* New note input */}
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder={notes.length === 0
-          ? 'e.g. Woke up feeling tired. Slight headache since lunchtime…'
-          : 'Add another note…'}
+        placeholder={notes.length === 0 ? 'e.g. Woke up feeling tired. Slight headache since lunchtime…' : 'Add another note…'}
         style={{ width: '100%', minHeight: 80, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #efefef', background: '#fff', fontFamily: 'inherit', fontSize: 14, color: '#111111', resize: 'vertical', outline: 'none', lineHeight: 1.6 }}
       />
-      <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+
+      {recording && (
+        <div style={{ margin: '6px 0', fontSize: 12, color: '#e8457a', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8457a', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+          Listening — speak now. Tap Stop when done.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
         <button onClick={save} disabled={!text.trim()}
           style={{ padding: '9px 20px', background: text.trim() ? '#5a9ea0' : '#e0e0e0', color: text.trim() ? '#fff' : '#aaaaaa', border: 'none', borderRadius: 10, fontSize: 13, fontFamily: 'inherit', fontWeight: 600 }}>
           {isToday ? 'Add note' : 'Add note (past day)'}
         </button>
-        <button
-          onMouseDown={startDictation}
-          onMouseUp={stopDictation}
-          onTouchStart={startDictation}
-          onTouchEnd={stopDictation}
-          style={{ padding: '9px 16px', background: recording ? '#e8457a' : '#f5f5f5', color: recording ? '#fff' : '#767676', border: '1.5px solid #efefef', borderRadius: 10, fontSize: 13, fontFamily: 'inherit', fontWeight: 600, userSelect: 'none' }}>
-          {recording ? '● Recording…' : '🎤 Hold to dictate'}
+        <button onClick={toggleDictation}
+          style={{ padding: '9px 16px', background: recording ? '#e8457a' : '#f5f5f5', color: recording ? '#fff' : '#767676', border: '1.5px solid #efefef', borderRadius: 10, fontSize: 13, fontFamily: 'inherit', fontWeight: 600 }}>
+          {recording ? '■ Stop' : '🎤 Dictate'}
         </button>
       </div>
-      {recording && (
-        <div style={{ marginTop: 8, fontSize: 12, color: '#e8457a' }}>Listening — speak now. Release to stop.</div>
-      )}
     </Section>
   )
 }

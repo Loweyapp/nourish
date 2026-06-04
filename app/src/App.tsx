@@ -11,9 +11,10 @@ import WarningBar from './components/WarningBar'
 import LogTab from './components/LogTab'
 import HistoryTab from './components/HistoryTab'
 import InsightsTab from './components/InsightsTab'
+import JournalTab from './components/JournalTab'
 import { useEntries } from './hooks/useEntries'
 
-type Tab = 'log' | 'history' | 'insights'
+type Tab = 'log' | 'history' | 'insights' | 'journal'
 
 export default function App() {
   const [hasKey, setHasKey] = useState(!!getApiKey())
@@ -37,8 +38,9 @@ export default function App() {
 
   const selectDay = (d: string) => { setCurrentDay(d); setTab('log') }
 
-  const navItems: Array<[Tab, string, 'log' | 'history' | 'insights']> = [
+  const navItems: Array<[Tab, string, 'log' | 'history' | 'insights' | 'journal']> = [
     ['log', 'Log', 'log'],
+    ['journal', 'Journal', 'journal'],
     ['history', 'History', 'history'],
     ['insights', 'Insights', 'insights'],
   ]
@@ -104,6 +106,7 @@ export default function App() {
       <StatsBar entries={entries} />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 14px 80px' }}>
         {tab === 'log' && <LogTab entry={entries[currentDay] ?? {}} allEntries={entries} currentDay={currentDay} onChange={data => updateEntry(currentDay, data)} fitbitConnected={fitbitConnected} />}
+        {tab === 'journal' && <JournalTab entry={entries[currentDay] ?? {}} allEntries={entries} currentDay={currentDay} onChange={data => updateEntry(currentDay, data)} />}
         {tab === 'history' && <HistoryTab entries={entries} onSelectDay={selectDay} />}
         {tab === 'insights' && <InsightsTab entries={entries} />}
       </div>
