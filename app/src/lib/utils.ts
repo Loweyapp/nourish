@@ -18,6 +18,13 @@ export function formatDate(d: string): string {
   })
 }
 
+export function shortDate(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
 export function fmtMins(m: number): string {
   if (!m) return '0h 0m'
   return `${Math.floor(m / 60)}h ${m % 60}m`
