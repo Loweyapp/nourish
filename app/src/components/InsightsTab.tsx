@@ -424,7 +424,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
           })()}
         </Section>
       ) : null
-      case 'bp': return bpData.length >= 2 ? (
+      case 'bp': return bpData.length >= 1 ? (
         <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} />
       ) : null
       case 'ai': return (
