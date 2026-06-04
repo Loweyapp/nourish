@@ -5,6 +5,12 @@ export type EnergyValue = 1 | 2 | 3 | 4 | 5
 export type MoodOption = { emoji: string; label: string; value: MoodValue }
 export type EnergyOption = { emoji: string; label: string; value: EnergyValue }
 
+// ── Journal ────────────────────────────────────────────────────────────────────
+export type JournalNote = {
+  text: string
+  timestamp: string   // ISO 8601 e.g. "2026-06-04T09:32:00"
+}
+
 // ── Food & drink ───────────────────────────────────────────────────────────────
 export type FoodItem = {
   text: string
@@ -82,6 +88,7 @@ export type DayEntry = {
   bpDiastolic?: number
   bpPulse?: number
   bpNote?: string
+  notes?: JournalNote[]
   fitbit?: FitbitData
   // legacy bp shape from nourish.html era — read-only, never written
   bp?: { systolic?: number; diastolic?: number; pulse?: number }

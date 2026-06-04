@@ -6,6 +6,7 @@ import {
 } from '../lib'
 import { Section, Spinner, AIBubble, ChatWidget, ScrollRight } from './shared'
 import DraggableLayout from './DraggableLayout'
+import GPReportModal from './GPReportModal'
 
 const MOODS = [
   { emoji: '😴', label: 'Exhausted', value: 1 },
@@ -213,6 +214,7 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
   const [analysed, setAnalysed] = useState(false)
   const [error, setError] = useState('')
   const [editLayout, setEditLayout] = useState(false)
+  const [showGPReport, setShowGPReport] = useState(false)
 
   const days = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14)
   const moodData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), mood: e.mood ?? 0, energy: e.energy ?? 0 }))
@@ -238,6 +240,7 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
       meals: (e.food ?? []).map(f => f.text).join('; '),
       mood: MOODS.find(m => m.value === e.mood)?.label,
       energy: ENERGY.find(m => m.value === e.energy)?.label,
+      journalNotes: (e.notes ?? []).map(n => n.text).join(' | ') || null,
       moodNote: e.moodNote, exercise: e.exercise, weight: e.weight,
       bp: e.bpSystolic && e.bpDiastolic ? `${e.bpSystolic}/${e.bpDiastolic} mmHg` : null, bpPulse: e.bpPulse,
       alcoholUnits: e.alcohol?.reduce((s, a) => s + (a.units || 0), 0).toFixed(1) ?? null,
@@ -254,8 +257,9 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
     try {
       const resp = await askClaude(
         [{ role: 'user', content: JSON.stringify(summary) }],
-        `You are a health coach analysing a user's food diary, mood, energy, exercise, weight, and Fitbit data (steps, sleep stages, heart rate).
-Look for genuine correlations: e.g. poor sleep vs low energy/mood the next day, high step days vs mood, calorie intake vs weight trend, deep sleep vs energy levels, blood pressure trends and how they relate to exercise, sleep, or stress.
+        `You are a health coach analysing a user's food diary, mood, energy, exercise, weight, Fitbit data (steps, sleep stages, heart rate), and personal journal notes.
+Look for genuine correlations: e.g. poor sleep vs low energy/mood the next day, high step days vs mood, calorie intake vs weight trend, deep sleep vs energy levels, blood pressure trends relating to exercise/sleep/stress, symptoms in journal notes correlating with specific foods or alcohol.
+Pay particular attention to journal notes — they contain the user's own words about how they feel, symptoms, and experiences.
 Write 4-6 specific, evidence-based bullet points from the actual data. Warm but honest. Use • for bullets. British English.`
       )
       setInsight(resp); setAnalysed(true)
@@ -443,12 +447,18 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: editLayout ? 12 : 0 }}>
+      {showGPReport && <GPReportModal entries={entries} onClose={() => setShowGPReport(false)} />}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editLayout ? 12 : 0 }}>
+        <button onClick={() => setShowGPReport(true)}
+          style={{ padding: '7px 16px', background: '#5a9ea0', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>
+          📋 GP report
+        </button>
         <button onClick={() => setEditLayout(v => !v)}
-          style={{ background: editLayout ? '#6a9e6a' : 'none', border: editLayout ? 'none' : '1.5px solid #efefef', color: editLayout ? '#fff' : '#767676', borderRadius: 10, padding: '6px 14px', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, marginBottom: editLayout ? 0 : 12 }}>
+          style={{ background: editLayout ? '#6a9e6a' : 'none', border: editLayout ? 'none' : '1.5px solid #efefef', color: editLayout ? '#fff' : '#767676', borderRadius: 10, padding: '6px 14px', fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>
           {editLayout ? '✓ Done' : '✎ Edit layout'}
         </button>
       </div>
+      {!editLayout && <div style={{ marginBottom: 12 }} />}
       {editLayout && (
         <div style={{ fontSize: 12, color: '#767676', marginBottom: 12, textAlign: 'center' }}>
           Use the ↑↓ buttons to reorder sections
