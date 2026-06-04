@@ -52,6 +52,7 @@ export default function App() {
             <div>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#111111', letterSpacing: -0.3 }}>
                 ✦ Nourish
+                <span style={{ fontSize: 11, fontWeight: 400, color: '#aaaaaa', marginLeft: 7, fontFamily: 'monospace', letterSpacing: 0 }}>{__APP_VERSION__}</span>
                 {fitbitConnected && <span style={{ fontSize: 12, color: '#767676', fontWeight: 500, marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon name="watch" size={14} color="#4a86d8" /> Fitbit</span>}
               </div>
             </div>
