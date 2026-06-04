@@ -66,6 +66,12 @@ Natural-language hand-portion descriptions in food entry. The idea: instead of w
 
 No design work done yet — start with a brief before building.
 
+### Ideas for later
+
+- **M3 Expressive UI redesign** — full visual overhaul aligned with Material Design 3 Expressive (rounded shapes, dynamic colour, expressive typography). No design work done yet; start with a Figma brief.
+- **Voice / dictation food entry** — speak a meal description instead of typing it. Likely Web Speech API → text → existing Claude analysis pipeline. Simple path; no design work done.
+- **Dates on Insights graphs** — x-axis labels showing actual dates on the BP and alcohol trend charts, so you can tell when data is from at a glance. Currently the graphs show data points with no time reference.
+
 ### Deferred candidates
 
 These are real improvements but not blocking anything. Revisit when there's a clear motivation.

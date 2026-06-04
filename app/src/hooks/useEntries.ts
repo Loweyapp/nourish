@@ -3,15 +3,15 @@ import type { DayEntry } from '../types'
 import {
   loadEntries, saveEntries,
   FB_FETCH_KEY, FB_VERIFIER_KEY,
-  ls,
+  ls, DUMMY_SEEDED_KEY,
   saveGDriveToken, isGDriveConnected, shouldAutoBackup, backupToDrive,
   exchangeCode, fetchFitbitDay, saveFitbitToken,
-  today, seedDummyData,
+  today, clearDummyData,
 } from '../lib'
 
 export function useEntries() {
   const [entries, setEntries] = useState<Record<string, DayEntry>>(() => {
-    seedDummyData()
+    if (ls.str(DUMMY_SEEDED_KEY) === '1') clearDummyData()
     return loadEntries()
   })
 

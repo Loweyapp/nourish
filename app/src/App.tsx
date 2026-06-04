@@ -53,13 +53,19 @@ export default function App() {
               <div style={{ fontSize: 22, fontWeight: 800, color: '#111111', letterSpacing: -0.3 }}>
                 ✦ Nourish
                 <span style={{ fontSize: 11, fontWeight: 400, color: '#aaaaaa', marginLeft: 7, fontFamily: 'monospace', letterSpacing: 0 }}>{__APP_VERSION__}</span>
-                {fitbitConnected && <span style={{ fontSize: 12, color: '#767676', fontWeight: 500, marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon name="watch" size={14} color="#4a86d8" /> Fitbit</span>}
               </div>
             </div>
-            <button onClick={() => setShowSettings(true)}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: '#f5f5f5', border: '1px solid #efefef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="settings" size={20} color="#767676" />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {fitbitConnected && (
+                <span style={{ fontSize: 12, color: '#767676', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  <Icon name="watch" size={14} color="#4a86d8" /> Fitbit
+                </span>
+              )}
+              <button onClick={() => setShowSettings(true)}
+                style={{ width: 36, height: 36, borderRadius: '50%', background: '#f5f5f5', border: '1px solid #efefef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="settings" size={20} color="#767676" />
+              </button>
+            </div>
           </div>
           {/* Date navigator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
