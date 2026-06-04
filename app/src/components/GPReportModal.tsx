@@ -17,12 +17,20 @@ export default function GPReportModal({ entries, onClose }: GPReportModalProps) 
 
   const generate = async () => {
     setLoading(true); setError('')
-    const bpReadings = days
-      .filter(([, e]) => e.bpSystolic && e.bpDiastolic)
-      .map(([d, e]) => {
-        const cat = bpCategory(e.bpSystolic!, e.bpDiastolic!)
-        return `${formatDate(d)}: ${e.bpSystolic}/${e.bpDiastolic} mmHg${e.bpPulse ? ` pulse ${e.bpPulse}bpm` : ''} [${cat?.short ?? ''}]${e.bpNote ? ` — "${e.bpNote}"` : ''}`
-      })
+    const bpReadings = days.flatMap(([d, e]) => {
+      if (e.bpSessions?.length) {
+        return e.bpSessions.map(s => {
+          const cat = bpCategory(s.avg.sys, s.avg.dia)
+          const readingsStr = s.readings.length > 1 ? ` (${s.readings.map(r => `${r.sys}/${r.dia}`).join(', ')} → avg)` : ''
+          return `${formatDate(d)} ${s.label}: ${s.avg.sys}/${s.avg.dia} mmHg${s.avg.pulse ? ` pulse ${s.avg.pulse}bpm` : ''}${readingsStr} [${cat?.short ?? ''}]${s.note ? ` — "${s.note}"` : ''}`
+        })
+      }
+      if (e.bpSystolic && e.bpDiastolic) {
+        const cat = bpCategory(e.bpSystolic, e.bpDiastolic)
+        return [`${formatDate(d)}: ${e.bpSystolic}/${e.bpDiastolic} mmHg${e.bpPulse ? ` pulse ${e.bpPulse}bpm` : ''} [${cat?.short ?? ''}]`]
+      }
+      return []
+    })
 
     const journalEntries = days
       .filter(([, e]) => e.notes?.length)

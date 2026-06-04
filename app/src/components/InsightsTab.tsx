@@ -23,7 +23,7 @@ const ENERGY = [
 ]
 
 type WD = { d: string; w: number }
-type BD = { d: string; sys: number; dia: number; pulse?: number | null }
+type BD = { d: string; sys: number; dia: number; pulse?: number | null; label?: string }
 
 interface WeightTrendSectionProps {
   weightData: WD[]
@@ -220,7 +220,16 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
   const weightData: WD[] = [...days].filter(([, e]) => e.weight).reverse().map(([d, e]) => ({ d: shortDate(d), w: parseFloat(e.weight!) }))
   const stepsData = [...days].filter(([, e]) => e.fitbit?.steps).reverse().map(([d, e]) => ({ d: shortDate(d), s: e.fitbit!.steps }))
   const alcData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), u: parseFloat(((e.alcohol ?? []).reduce((s, a) => s + (a.units || 0), 0)).toFixed(1)) }))
-  const bpData: BD[] = [...days].filter(([, e]) => e.bpSystolic && e.bpDiastolic).reverse().map(([d, e]) => ({ d: shortDate(d), sys: e.bpSystolic!, dia: e.bpDiastolic!, pulse: e.bpPulse ?? null }))
+  const bpData: BD[] = [...days].sort((a, b) => a[0].localeCompare(b[0])).flatMap(([d, e]) => {
+    const labelAbbr: Record<string, string> = { Morning: 'AM', Afternoon: 'PM', Evening: 'Eve', Other: '' }
+    if (e.bpSessions?.length) {
+      return [...e.bpSessions]
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .map(s => ({ d: shortDate(d) + (labelAbbr[s.label] ? ' ' + labelAbbr[s.label] : ''), sys: s.avg.sys, dia: s.avg.dia, pulse: s.avg.pulse ?? null, label: s.label }))
+    }
+    if (e.bpSystolic && e.bpDiastolic) return [{ d: shortDate(d), sys: e.bpSystolic, dia: e.bpDiastolic, pulse: e.bpPulse ?? null }]
+    return []
+  })
 
   const maxCals = Math.max(...calData.map(d => d.cals), 1)
   const maxSteps = Math.max(...stepsData.map(d => d.s), 1)
