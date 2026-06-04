@@ -1,7 +1,13 @@
 import type { DayEntry } from '../types'
 import { loadEntries, saveEntries, ls, DUMMY_SEEDED_KEY } from './storage'
 
-// Verbatim port from index.html
+const DUMMY_ALC_TEXTS = new Set([
+  '2 pints of lager (4%)',
+  'Glass of red wine (175ml, 13%)',
+  '3 pints of lager (4%), double gin & tonic',
+  'Bottle of beer (330ml, 5%)',
+])
+
 export function seedDummyData(): Record<string, DayEntry> | null {
   const seeded = ls.str(DUMMY_SEEDED_KEY)
   if (seeded === 'cleared' || seeded === '1') return null
@@ -53,5 +59,30 @@ export function seedDummyData(): Record<string, DayEntry> | null {
 }
 
 export function clearDummyData(): void {
+  const entries = loadEntries()
+  let changed = false
+  for (const [date, entry] of Object.entries(entries)) {
+    let needsUpdate = false
+    const cleaned = { ...entry }
+    if (cleaned.bpSystolic !== undefined || cleaned.bpDiastolic !== undefined || cleaned.bpPulse !== undefined) {
+      delete cleaned.bpSystolic
+      delete cleaned.bpDiastolic
+      delete cleaned.bpPulse
+      needsUpdate = true
+      changed = true
+    }
+    if (cleaned.alcohol?.some(a => DUMMY_ALC_TEXTS.has(a.text))) {
+      const filtered = cleaned.alcohol.filter(a => !DUMMY_ALC_TEXTS.has(a.text))
+      if (filtered.length > 0) {
+        cleaned.alcohol = filtered
+      } else {
+        delete cleaned.alcohol
+      }
+      needsUpdate = true
+      changed = true
+    }
+    if (needsUpdate) entries[date] = cleaned
+  }
+  if (changed) saveEntries(entries)
   ls.setStr(DUMMY_SEEDED_KEY, 'cleared')
 }

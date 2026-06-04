@@ -7,7 +7,6 @@ import {
   clearFitbitToken, getFitbitToken,
   clearGDriveToken, isGDriveConnected, getLastBackup,
   loadEntries, backupToDrive,
-  clearDummyData,
   getLifetimeUsage,
   ls, USAGE_KEY,
 } from '../lib'
@@ -264,19 +263,6 @@ export default function SettingsScreen({ onClose }: SettingsScreenProps) {
         </div>
       </div>
 
-      <SectionDivider />
-
-      {/* Demo data */}
-      <div>
-        <Label>Demo Data</Label>
-        <div style={{ fontSize: 12, color: '#767676', marginBottom: 10, lineHeight: 1.6 }}>
-          7 days of sample data was added so you can preview the graphs. Remove it when you're ready to use the app for real.
-        </div>
-        <button onClick={() => { clearDummyData(); window.location.reload() }}
-          style={{ padding: '10px 20px', background: '#e8457a', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', fontWeight: 600 }}>
-          Clear demo data
-        </button>
-      </div>
     </div>
   )
 }
