@@ -8,6 +8,17 @@ Last verified: 4 June 2026
 
 ---
 
+## Why this app exists
+
+Alex is using Nourish to support a significant weight loss journey. Key context that should inform every design and AI decision:
+
+- **Primary goal: weight loss** — a lot of weight. Finds exercise difficult and portion control hard. The app should make tracking as frictionless as possible, not add to the burden.
+- **Food sensitivity investigation** — tracking diet to find correlations between how they feel and gluten/dairy intake. This makes the notes and food log the most important data.
+- **Doctor-ordered blood pressure monitoring** — recently diagnosed with high blood pressure and started medication. Doctor asked for a food diary and daily BP readings. Both the food log and BP tracking are therefore clinically relevant, not just nice-to-haves.
+- **Coaching tone** — given the above, the AI should be encouraging and practical, never preachy or overwhelming.
+
+---
+
 ## Stack
 
 | Layer | Technology |
@@ -67,6 +78,8 @@ Natural-language hand-portion descriptions in food entry. The idea: instead of w
 No design work done yet — start with a brief before building.
 
 ### Ideas for later
+
+- **Daily journal / how-am-I-feeling notes** — a free-text notes area on the Log tab for each day. Write or dictate how you feel (morning, evening, or any time). The notes should be available to the AI when generating insights, so it can spot patterns (e.g. headaches correlating with gluten days, fatigue correlating with poor sleep). Needs typed input + voice dictation. No design work done yet.
 
 - **UI simplification** — the app feels busy; audit each screen for clutter and reduce cognitive load. No specific brief yet — start by identifying what can be hidden, collapsed, or removed entirely before redesigning.
 
