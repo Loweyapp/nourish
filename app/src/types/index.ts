@@ -42,6 +42,18 @@ export type Favourite = {
   useCount: number
 }
 
+// ── Blood pressure sessions ────────────────────────────────────────────────────
+export type BPReading = { sys: number; dia: number; pulse?: number }
+export type BPSessionLabel = 'Morning' | 'Afternoon' | 'Evening' | 'Other'
+export type BPSession = {
+  id: string              // ISO timestamp used as stable key
+  label: BPSessionLabel
+  timestamp: string       // ISO 8601 e.g. "2026-06-04T09:15:00"
+  readings: BPReading[]   // 1–3 individual readings
+  avg: BPReading          // computed average of readings
+  note?: string
+}
+
 // ── Fitbit ─────────────────────────────────────────────────────────────────────
 export type FitbitData = {
   steps: number
@@ -84,6 +96,8 @@ export type DayEntry = {
   exerciseFeedback?: string
   weight?: string         // stored as string (e.g. "74.5") — preserve existing localStorage shape
   weightFeedback?: string // legacy — no longer written by new code
+  bpSessions?: BPSession[]
+  // Legacy single-reading fields — read-only, never written by new code
   bpSystolic?: number
   bpDiastolic?: number
   bpPulse?: number
