@@ -12,9 +12,9 @@ interface FoodSummaryHeaderProps {
 }
 
 function FoodSummaryHeader({ foodItems, totalCals }: FoodSummaryHeaderProps) {
-  const tp = foodItems.reduce((s, f) => s + (f.protein_g || 0), 0)
-  const tc = foodItems.reduce((s, f) => s + (f.carbs_g || 0), 0)
-  const tf = foodItems.reduce((s, f) => s + (f.fat_g || 0), 0)
+  const tp = Math.round(foodItems.reduce((s, f) => s + (f.protein_g || 0), 0) * 10) / 10
+  const tc = Math.round(foodItems.reduce((s, f) => s + (f.carbs_g || 0), 0) * 10) / 10
+  const tf = Math.round(foodItems.reduce((s, f) => s + (f.fat_g || 0), 0) * 10) / 10
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
       <div>
@@ -110,7 +110,13 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
       try { data = JSON.parse(raw) as typeof data } catch { throw new Error('Bad response') }
       if (!resp.ok || data.error) throw new Error(data.error?.message ?? `HTTP ${resp.status}`)
       setText(data.content?.[0]?.text ?? '')
-    } catch (e) { setError("Couldn't identify: " + ((e as Error)?.message ?? String(e))) }
+    } catch (e) {
+      const msg = (e as Error)?.message ?? String(e)
+      const friendly = /overload/i.test(msg) ? 'Claude is busy right now — please try again in a moment.'
+        : /network|failed to fetch/i.test(msg) ? 'Network error — check your connection and try again.'
+        : "Couldn't identify the image — try again or type the description instead."
+      setError(friendly)
+    }
     setImageLoading(false)
   }
 
