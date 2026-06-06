@@ -27,7 +27,7 @@ export default function HistoryTab({ entries, onSelectDay }: HistoryTabProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {days.map(([d, e]) => {
-        const cals = (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0)
+        const cals = (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0)
         const moodObj = MOODS.find(m => m.value === e.mood)
         const energyObj = ENERGY.find(m => m.value === e.energy)
         return (

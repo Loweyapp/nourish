@@ -39,7 +39,7 @@ export default function GPReportModal({ entries, onClose }: GPReportModalProps) 
     const foodSummary = days
       .filter(([, e]) => (e.food ?? []).length > 0)
       .map(([d, e]) => {
-        const cals = (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0)
+        const cals = (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0)
         const items = (e.food ?? []).map(f => f.text).join(', ')
         return `${formatDate(d)}: ${cals} kcal — ${items}`
       })

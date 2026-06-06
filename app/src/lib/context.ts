@@ -22,8 +22,10 @@ export function buildDayContext(entry: DayEntry | undefined): string {
   if (!entry) return 'No data logged today yet.'
   const parts: string[] = []
   if (entry.food?.length) {
-    const totalCals = entry.food.reduce((s, f) => s + (f.calories || 0), 0)
-    parts.push(`Food: ${entry.food.map((f) => `${f.meal}: ${f.text} (${f.calories} kcal)`).join('; ')}. Total: ${totalCals} kcal.`)
+    const foodCals = entry.food.reduce((s, f) => s + (f.calories || 0), 0)
+    const alcCals = (entry.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0)
+    const totalCals = foodCals + alcCals
+    parts.push(`Food: ${entry.food.map((f) => `${f.meal}: ${f.text} (${f.calories} kcal)`).join('; ')}. Total: ${totalCals} kcal${alcCals ? ` (incl. ${alcCals} kcal from alcohol)` : ''}.`)
   }
   if (entry.mood)     parts.push(`Mood: ${MOODS.find((m) => m.value === entry.mood)?.label}.`)
   if (entry.energy)   parts.push(`Energy: ${ENERGY.find((e) => e.value === entry.energy)?.label}.`)
