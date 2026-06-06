@@ -240,7 +240,7 @@ Be realistic. UK measurements and British English.`
   const updateFoodTime = (i: number, t: string) => onUpdate(foodItems.map((f, idx) => idx === i ? { ...f, time: t } : f))
   const updateDrinkTime = (i: number, t: string) => onAlcoholUpdate(alcoholItems.map((a, idx) => idx === i ? { ...a, time: t } : a))
 
-  const totalCals = foodItems.reduce((s, f) => s + (f.calories || 0), 0)
+  const totalCals = foodItems.reduce((s, f) => s + (f.calories || 0), 0) + alcoholItems.reduce((s, a) => s + (a.calories || 0), 0)
   const totalUnits = alcoholItems.reduce((s, a) => s + (a.units || 0), 0)
 
   const isPending = pending || pendingDrink

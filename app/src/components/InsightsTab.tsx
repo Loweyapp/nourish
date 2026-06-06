@@ -216,7 +216,7 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
 
   const days = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14)
   const moodData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), mood: e.mood ?? 0, energy: e.energy ?? 0 }))
-  const calData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), cals: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) }))
+  const calData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), cals: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0) }))
   const weightData: WD[] = [...days].filter(([, e]) => e.weight).reverse().map(([d, e]) => ({ d: shortDate(d), w: parseFloat(e.weight!) }))
   const stepsData = [...days].filter(([, e]) => e.fitbit?.steps).reverse().map(([d, e]) => ({ d: shortDate(d), s: e.fitbit!.steps }))
   const alcData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), u: parseFloat(((e.alcohol ?? []).reduce((s, a) => s + (a.units || 0), 0)).toFixed(1)) }))
@@ -243,7 +243,7 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
     setLoading(true); setError('')
     const summary = days.map(([d, e]) => ({
       date: d,
-      calories: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0),
+      calories: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0),
       meals: (e.food ?? []).map(f => f.text).join('; '),
       mood: MOODS.find(m => m.value === e.mood)?.label,
       energy: ENERGY.find(m => m.value === e.energy)?.label,

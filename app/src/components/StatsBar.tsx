@@ -50,7 +50,10 @@ export default function StatsBar({ entries }: { entries: Record<string, DayEntry
   const range = getRange()
   const rangeEntries = range.map(d => entries[d]).filter((e): e is DayEntry => !!e)
 
-  const calsIn  = rangeEntries.reduce((s, e) => (e.food ?? []).reduce((a, f) => a + (f.calories || 0), s), 0)
+  const calsIn  = rangeEntries.reduce((s, e) =>
+    (e.food ?? []).reduce((a, f) => a + (f.calories || 0), s) +
+    (e.alcohol ?? []).reduce((a, a2) => a + (a2.calories || 0), 0)
+  , 0)
   const calsOut = rangeEntries.reduce((s, e) => s + (e.fitbit?.calsBurned || 0), 0)
   const netCals = calsIn - calsOut
   const steps   = rangeEntries.reduce((s, e) => s + (e.fitbit?.steps || 0), 0)
