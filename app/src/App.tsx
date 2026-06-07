@@ -31,6 +31,15 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { autoSyncFitbit(fitbitConnected) }, [])
 
+  useEffect(() => {
+    if (!fitbitConnected) return
+    const interval = setInterval(() => autoSyncFitbit(fitbitConnected), 60 * 60 * 1000)
+    const onVisible = () => { if (document.visibilityState === 'visible') autoSyncFitbit(fitbitConnected) }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitbitConnected])
+
   if (!hasKey) return <ApiKeyScreen onSave={() => setHasKey(true)} />
   if (showSettings) return <SettingsScreen onClose={() => setShowSettings(false)} />
 
