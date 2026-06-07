@@ -62,8 +62,10 @@ export function useEntries() {
 
   const autoSyncFitbit = (fitbitConnected: boolean) => {
     if (!fitbitConnected) return
-    const lastFetch = ls.str(FB_FETCH_KEY)
-    if (lastFetch === today()) return
+    const current = loadEntries()
+    const fetchedAt = current[today()]?.fitbit?.fetchedAt ?? 0
+    const stale = Date.now() - fetchedAt > 60 * 60 * 1000
+    if (!stale) return
     fetchFitbitDay().then(fitbit => {
       const td = today()
       setEntries(prev => {
