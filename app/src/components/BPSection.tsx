@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { DayEntry, BPSession, BPSessionLabel, BPReading } from '../types'
 import { bpCategory } from '../lib'
 import { Section } from './shared'
@@ -38,24 +38,45 @@ interface ReadingRowProps {
   reading: BPReading
   index: number
   onChange: (r: BPReading) => void
+  sysRef: React.RefObject<HTMLInputElement | null>
+  nextSysRef?: React.RefObject<HTMLInputElement | null> | undefined
 }
 
-function ReadingRow({ reading, index, onChange }: ReadingRowProps) {
+function ReadingRow({ reading, index, onChange, sysRef, nextSysRef }: ReadingRowProps) {
+  const diaRef = useRef<HTMLInputElement>(null)
+  const pulseRef = useRef<HTMLInputElement>(null)
+
+  const fieldRefs: Record<keyof BPReading, React.RefObject<HTMLInputElement | null>> = {
+    sys: sysRef, dia: diaRef, pulse: pulseRef,
+  }
+
   const fields: Array<[keyof BPReading, string, string]> = [
     ['sys', 'Sys', '120'],
     ['dia', 'Dia', '80'],
     ['pulse', 'Pulse', '72'],
   ]
+
+  const handleChange = (key: keyof BPReading, raw: string) => {
+    onChange({ ...reading, [key]: raw ? Number(raw) : 0 })
+    if (raw.length >= 3) {
+      if (key === 'sys') diaRef.current?.focus()
+      else if (key === 'dia') pulseRef.current?.focus()
+      else if (key === 'pulse') nextSysRef?.current?.focus()
+    }
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
       <span style={{ fontSize: 11, color: '#aaaaaa', width: 20, textAlign: 'right', flexShrink: 0 }}>#{index + 1}</span>
       {fields.map(([key, label, ph]) => (
         <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <input
+            ref={fieldRefs[key] as React.RefObject<HTMLInputElement>}
             type="number"
+            inputMode="numeric"
             placeholder={ph}
             value={(reading[key] ?? 0) || ''}
-            onChange={e => onChange({ ...reading, [key]: e.target.value ? Number(e.target.value) : 0 })}
+            onChange={e => handleChange(key, e.target.value)}
             style={{ width: 60, padding: '8px 4px', borderRadius: 10, border: '1.5px solid #efefef', background: '#fff', fontFamily: 'inherit', fontSize: 16, fontWeight: 700, color: '#111111', outline: 'none', textAlign: 'center' }}
           />
           <span style={{ fontSize: 10, color: '#aaaaaa', marginTop: 2 }}>{label}{key === 'pulse' ? ' opt.' : ''}</span>
@@ -66,6 +87,7 @@ function ReadingRow({ reading, index, onChange }: ReadingRowProps) {
 }
 
 export default function BPSection({ entry, onUpdate }: BPSectionProps) {
+  const rowSysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)]
   const [addingSession, setAddingSession] = useState(false)
   const [label, setLabel] = useState<BPSessionLabel>(defaultLabel)
   const [readings, setReadings] = useState<BPReading[]>([emptyReading()])
@@ -183,7 +205,10 @@ export default function BPSection({ entry, onUpdate }: BPSectionProps) {
           {/* Readings */}
           <div style={{ marginBottom: 8 }}>
             {readings.map((r, i) => (
-              <ReadingRow key={i} reading={r} index={i} onChange={updated => setReadings(readings.map((x, j) => j === i ? updated : x))} />
+              <ReadingRow key={i} reading={r} index={i}
+                sysRef={rowSysRefs[i]!}
+                nextSysRef={rowSysRefs[i + 1]}
+                onChange={updated => setReadings(readings.map((x, j) => j === i ? updated : x))} />
             ))}
             {readings.length < 3 && (
               <button onClick={() => setReadings([...readings, emptyReading()])}
