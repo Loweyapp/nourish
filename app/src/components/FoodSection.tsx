@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import type { FoodItem, DrinkItem, Favourite } from '../types'
 import {
-  askClaude, getApiKey, r1, extractJSON,
+  askClaude, getApiKey, r1, extractJSON, CLAUDE_MODEL,
   getFavourites, addFavourite, incrementFavUseCount,
 } from '../lib'
 import { Section, Icon, Spinner, AnalyseBtn, HourSelect, AIBubble, ChatWidget } from './shared'
@@ -98,7 +98,7 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key ?? '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400,
+        body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 400,
           messages: [{ role: 'user', content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
             { type: 'text', text: "Describe what you see in this image. It could be food, a drink, or both. If it's a food: include estimated portions (e.g. '2 scrambled eggs on toast'). If it's an alcoholic drink or bottle/can label: include the drink type, volume, and ABV% if visible on the label (e.g. 'pint of Guinness 4.2%', '175ml glass of red wine approx 13%', '330ml can of Stella Artois 5%'). Be concise — just the description, no other commentary." }
@@ -108,7 +108,11 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
       const raw = await resp.text()
       let data: { error?: { message?: string }; content?: Array<{ text?: string }> }
       try { data = JSON.parse(raw) as typeof data } catch { throw new Error('Bad response') }
-      if (!resp.ok || data.error) throw new Error(data.error?.message ?? `HTTP ${resp.status}`)
+      if (!resp.ok || data.error) {
+        const msg = data.error?.message ?? `HTTP ${resp.status}`
+        if (/deprecated|not found|invalid model/i.test(msg)) throw new Error('AI model outdated — the app needs an update. Please try again later.')
+        throw new Error(msg)
+      }
       setText(data.content?.[0]?.text ?? '')
     } catch (e) {
       const msg = (e as Error)?.message ?? String(e)
