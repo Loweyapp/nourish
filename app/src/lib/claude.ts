@@ -1,6 +1,8 @@
 import type { ClaudeMessage, AnthropicResponse, UsageTotals } from '../types'
 import { getApiKey, getCoachingStyle, getLifetimeUsage, ls, USAGE_KEY } from './storage'
 
+export const CLAUDE_MODEL = 'claude-sonnet-4-6'
+
 // Module-level session accumulator — matches the live app's sessionUsage object
 export const sessionUsage: UsageTotals = { input: 0, output: 0 }
 
@@ -42,7 +44,7 @@ export async function askClaude(
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: CLAUDE_MODEL,
       max_tokens: 1000,
       system: fullSystem,
       messages,
@@ -52,7 +54,11 @@ export async function askClaude(
   let data: AnthropicResponse
   try { data = JSON.parse(raw) as AnthropicResponse }
   catch { throw new Error(`Bad response: ${raw.slice(0, 100)}`) }
-  if (!res.ok || data.error) throw new Error(data.error?.message || `HTTP ${res.status}`)
+  if (!res.ok || data.error) {
+    const msg = data.error?.message || `HTTP ${res.status}`
+    if (/deprecated|not found|invalid model/i.test(msg)) throw new Error('AI model outdated — the app needs an update. Please try again later.')
+    throw new Error(msg)
+  }
   trackUsage(data.usage)
   return data.content?.[0]?.text ?? ''
 }
