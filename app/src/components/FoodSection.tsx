@@ -98,7 +98,7 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key ?? '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 400,
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400,
           messages: [{ role: 'user', content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
             { type: 'text', text: "Describe what you see in this image. It could be food, a drink, or both. If it's a food: include estimated portions (e.g. '2 scrambled eggs on toast'). If it's an alcoholic drink or bottle/can label: include the drink type, volume, and ABV% if visible on the label (e.g. 'pint of Guinness 4.2%', '175ml glass of red wine approx 13%', '330ml can of Stella Artois 5%'). Be concise — just the description, no other commentary." }
