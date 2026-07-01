@@ -65,6 +65,9 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
   const [showFavs, setShowFavs] = useState(false)
   const [showAllItems, setShowAllItems] = useState(false)
   const [selectedFavs, setSelectedFavs] = useState<string[]>([])
+  const [favQty, setFavQty] = useState(1)
+  const [dupKey, setDupKey] = useState<string | null>(null)
+  const [dupQty, setDupQty] = useState(1)
   const [favourites, setFavourites] = useState<Favourite[]>(() => getFavourites())
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -195,7 +198,15 @@ Be realistic. UK measurements and British English.`
     const toAdd = favourites.filter(f => selectedFavs.includes(f.name || f.text))
     const newFood: FoodItem[] = [], newDrinks: DrinkItem[] = []
     toAdd.forEach(fav => {
-      const item = { text: fav.name || fav.text, calories: fav.calories || 0, protein_g: fav.protein_g || 0, carbs_g: fav.carbs_g || 0, fat_g: fav.fat_g || 0, units: fav.units || 0, time: nowTime }
+      const item = {
+        text: fav.name || fav.text,
+        calories: Math.round((fav.calories || 0) * favQty),
+        protein_g: Math.round((fav.protein_g || 0) * favQty * 10) / 10,
+        carbs_g: Math.round((fav.carbs_g || 0) * favQty * 10) / 10,
+        fat_g: Math.round((fav.fat_g || 0) * favQty * 10) / 10,
+        units: Math.round((fav.units || 0) * favQty * 10) / 10,
+        time: nowTime,
+      }
       if ((fav.units ?? 0) > 0) newDrinks.push(item)
       else newFood.push(item)
     })
@@ -203,8 +214,19 @@ Be realistic. UK measurements and British English.`
     if (newDrinks.length) onAlcoholUpdate([...alcoholItems, ...newDrinks])
     incrementFavUseCount(selectedFavs)
     setFavourites(getFavourites())
-    setSelectedFavs([])
-    setShowFavs(false)
+    setSelectedFavs([]); setFavQty(1); setShowFavs(false)
+  }
+
+  const duplicateItem = (item: AllItem) => {
+    const nowTime = String(new Date().getHours()).padStart(2, '0') + ':00'
+    if (item._type === 'food') {
+      const f = item as FoodItem
+      onUpdate([...foodItems, { ...f, calories: Math.round(f.calories * dupQty), protein_g: Math.round(f.protein_g * dupQty * 10) / 10, carbs_g: Math.round(f.carbs_g * dupQty * 10) / 10, fat_g: Math.round(f.fat_g * dupQty * 10) / 10, time: nowTime }])
+    } else {
+      const d = item as DrinkItem
+      onAlcoholUpdate([...alcoholItems, { ...d, calories: Math.round((d.calories || 0) * dupQty), units: Math.round((d.units || 0) * dupQty * 10) / 10, time: nowTime }])
+    }
+    setDupKey(null); setDupQty(1)
   }
 
   const toggleFavSelection = (nameOrText: string) => {
@@ -258,52 +280,84 @@ Be realistic. UK measurements and British English.`
     ...alcoholItems.map((a, i) => ({ ...a, _type: 'drink' as const, _i: i })),
   ].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
 
-  const renderLogItem = (item: AllItem, idx: number, key: string) => item._type === 'food' ? (
-    <div key={`${key}-f${item._i}-${idx}`} style={{ padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-          <div style={{ fontWeight: 600, color: '#111111', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(item as FoodItem).text}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-            <HourSelect value={item.time ?? '08:00'} onChange={t => updateFoodTime(item._i, t)} />
-            {(item as FoodItem).meal && <span style={{ fontSize: 12, color: '#767676' }}>· {(item as FoodItem).meal}</span>}
-          </div>
-          {((item as FoodItem).protein_g || (item as FoodItem).carbs_g || (item as FoodItem).fat_g) ? (
-            <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
-              {(item as FoodItem).protein_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#edfaf2', color: '#2d6a3f', fontWeight: 600 }}>{Math.round((item as FoodItem).protein_g)}g P</span>}
-              {(item as FoodItem).carbs_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#eef4ff', color: '#1a4090', fontWeight: 600 }}>{Math.round((item as FoodItem).carbs_g)}g C</span>}
-              {(item as FoodItem).fat_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#ffeef4', color: '#801030', fontWeight: 600 }}>{Math.round((item as FoodItem).fat_g)}g F</span>}
+  const QtyPicker = ({ itemKey, onConfirm }: { itemKey: string; onConfirm: () => void }) => dupKey === itemKey ? (
+    <div style={{ paddingBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        {[1, 2, 3].map(q => (
+          <button key={q} onClick={() => setDupQty(q)}
+            style={{ padding: '4px 14px', borderRadius: 20, border: `1.5px solid ${dupQty === q ? '#9ebd6e' : '#efefef'}`, background: dupQty === q ? '#9ebd6e' : '#fff', color: dupQty === q ? '#fff' : '#767676', fontSize: 13, fontFamily: 'inherit', fontWeight: 600, cursor: 'pointer' }}>
+            ×{q}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={onConfirm}
+          style={{ padding: '7px 18px', background: '#9ebd6e', color: '#fff', border: 'none', borderRadius: 20, fontSize: 13, fontFamily: 'inherit', fontWeight: 600, cursor: 'pointer' }}>
+          Add{dupQty > 1 ? ` ×${dupQty}` : ' again'}
+        </button>
+        <button onClick={() => { setDupKey(null); setDupQty(1) }}
+          style={{ padding: '7px 12px', background: 'none', border: '1.5px solid #efefef', borderRadius: 20, fontSize: 12, fontFamily: 'inherit', color: '#767676', cursor: 'pointer' }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  ) : null
+
+  const renderLogItem = (item: AllItem, idx: number, key: string) => {
+    const itemKey = `${item._type}-${item._i}`
+    return item._type === 'food' ? (
+      <div key={`${key}-f${item._i}-${idx}`} style={{ padding: '12px 0', borderBottom: dupKey === itemKey ? 'none' : '1px solid #f5f5f5' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+            <div style={{ fontWeight: 600, color: '#111111', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(item as FoodItem).text}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <HourSelect value={item.time ?? '08:00'} onChange={t => updateFoodTime(item._i, t)} />
+              {(item as FoodItem).meal && <span style={{ fontSize: 12, color: '#767676' }}>· {(item as FoodItem).meal}</span>}
             </div>
-          ) : null}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{(item as FoodItem).calories}</div>
-            <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>kcal</div>
+            {((item as FoodItem).protein_g || (item as FoodItem).carbs_g || (item as FoodItem).fat_g) ? (
+              <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
+                {(item as FoodItem).protein_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#edfaf2', color: '#2d6a3f', fontWeight: 600 }}>{Math.round((item as FoodItem).protein_g)}g P</span>}
+                {(item as FoodItem).carbs_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#eef4ff', color: '#1a4090', fontWeight: 600 }}>{Math.round((item as FoodItem).carbs_g)}g C</span>}
+                {(item as FoodItem).fat_g > 0 && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: '#ffeef4', color: '#801030', fontWeight: 600 }}>{Math.round((item as FoodItem).fat_g)}g F</span>}
+              </div>
+            ) : null}
           </div>
-          <button onClick={() => removeFood(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2 }}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{(item as FoodItem).calories}</div>
+              <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>kcal</div>
+            </div>
+            <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
+              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>
+            <button onClick={() => removeFood(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2, cursor: 'pointer' }}>×</button>
+          </div>
         </div>
+        <QtyPicker itemKey={itemKey} onConfirm={() => duplicateItem(item)} />
       </div>
-    </div>
-  ) : (
-    <div key={`${key}-d${item._i}-${idx}`} style={{ padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-          <div style={{ fontWeight: 600, color: '#111111', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(item as DrinkItem).drink_type || (item as DrinkItem).text}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-            <HourSelect value={item.time ?? '08:00'} onChange={t => updateDrinkTime(item._i, t)} />
-            <span style={{ fontSize: 12, color: '#767676', display: 'flex', alignItems: 'center', gap: 3 }}>· <Icon name="beer" size={15} color="#767676" /> Drink</span>
+    ) : (
+      <div key={`${key}-d${item._i}-${idx}`} style={{ padding: '12px 0', borderBottom: dupKey === itemKey ? 'none' : '1px solid #f5f5f5' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+            <div style={{ fontWeight: 600, color: '#111111', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(item as DrinkItem).drink_type || (item as DrinkItem).text}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <HourSelect value={item.time ?? '08:00'} onChange={t => updateDrinkTime(item._i, t)} />
+              <span style={{ fontSize: 12, color: '#767676', display: 'flex', alignItems: 'center', gap: 3 }}>· <Icon name="beer" size={15} color="#767676" /> Drink</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{((item as DrinkItem).units || 0).toFixed(1)}u</div>
+              <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>units</div>
+            </div>
+            <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
+              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>
+            <button onClick={() => removeDrink(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2, cursor: 'pointer' }}>×</button>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{((item as DrinkItem).units || 0).toFixed(1)}u</div>
-            <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>units</div>
-          </div>
-          <button onClick={() => removeDrink(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2 }}>×</button>
-        </div>
+        <QtyPicker itemKey={itemKey} onConfirm={() => duplicateItem(item)} />
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <Section title="FOOD & DRINK" accent="#9ebd6e">
@@ -359,8 +413,17 @@ Be realistic. UK measurements and British English.`
               })}
               {selectedFavs.length > 0 && (
                 <div style={{ padding: '10px 14px', borderTop: '1.5px solid #efefef', background: '#f9f9f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: '#767676', fontWeight: 600 }}>Qty:</span>
+                    {[1, 2, 3].map(q => (
+                      <button key={q} onClick={() => setFavQty(q)}
+                        style={{ padding: '3px 12px', borderRadius: 20, border: `1.5px solid ${favQty === q ? '#9ebd6e' : '#e0e0e0'}`, background: favQty === q ? '#9ebd6e' : '#fff', color: favQty === q ? '#fff' : '#767676', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, cursor: 'pointer' }}>
+                        ×{q}
+                      </button>
+                    ))}
+                  </div>
                   <button onClick={addSelectedFavourites} style={{ width: '100%', padding: '10px', background: '#9ebd6e', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', fontWeight: 700, cursor: 'pointer' }}>
-                    {'+ Add ' + selectedFavs.length + ' item' + (selectedFavs.length > 1 ? 's' : '') + ' to log'}
+                    {'+ Add ' + selectedFavs.length + ' item' + (selectedFavs.length > 1 ? 's' : '') + (favQty > 1 ? ` ×${favQty}` : '') + ' to log'}
                   </button>
                 </div>
               )}
