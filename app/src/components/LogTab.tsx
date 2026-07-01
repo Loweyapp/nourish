@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { DayEntry, FitbitData } from '../types'
+import type { DayEntry, FitbitData, FoodItem, DrinkItem } from '../types'
 import { buildDayContext, LOG_LAYOUT_KEY } from '../lib'
 import DraggableLayout from './DraggableLayout'
 import FoodSection from './FoodSection'
@@ -15,18 +15,20 @@ interface LogTabProps {
   currentDay: string
   onChange: (data: DayEntry) => void
   fitbitConnected: boolean
+  isToday: boolean
+  copyToToday: (food?: FoodItem, drink?: DrinkItem) => void
 }
 
 const LOG_DEFAULT = ['food', 'fitbit', 'mood', 'exercise', 'weight', 'bp']
 
-export default function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected }: LogTabProps) {
+export default function LogTab({ entry, allEntries, currentDay, onChange, fitbitConnected, isToday, copyToToday }: LogTabProps) {
   const [editLayout, setEditLayout] = useState(false)
   const dayContext = buildDayContext(entry)
   const updateFitbit = (fitbit: FitbitData) => onChange({ ...entry, fitbit })
 
   const renderSection = (id: string) => {
     switch (id) {
-      case 'food': return <FoodSection foodItems={(entry.food ?? [])} onUpdate={(food) => onChange({ ...entry, food })} alcoholItems={(entry.alcohol ?? [])} onAlcoholUpdate={(alcohol) => onChange({ ...entry, alcohol })} dayContext={dayContext} fitbitData={entry.fitbit} />
+      case 'food': return <FoodSection foodItems={(entry.food ?? [])} onUpdate={(food) => onChange({ ...entry, food })} alcoholItems={(entry.alcohol ?? [])} onAlcoholUpdate={(alcohol) => onChange({ ...entry, alcohol })} dayContext={dayContext} fitbitData={entry.fitbit} isToday={isToday} copyToToday={copyToToday} />
       case 'fitbit': return <FitbitSection fitbitData={entry.fitbit} onUpdate={updateFitbit} connected={fitbitConnected} />
       case 'mood': return <MoodSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
       case 'exercise': return <ExerciseSection entry={entry} onUpdate={(d) => onChange({ ...entry, ...d })} dayContext={dayContext} />
