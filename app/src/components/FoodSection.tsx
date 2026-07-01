@@ -51,9 +51,11 @@ interface FoodSectionProps {
   onAlcoholUpdate: (alcohol: DrinkItem[]) => void
   dayContext: string
   fitbitData?: unknown
+  isToday?: boolean
+  copyToToday?: (food?: FoodItem, drink?: DrinkItem) => void
 }
 
-export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayContext }: FoodSectionProps) {
+export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoholUpdate, dayContext, isToday = true, copyToToday }: FoodSectionProps) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
@@ -68,6 +70,7 @@ export default function FoodSection({ foodItems, onUpdate, alcoholItems, onAlcoh
   const [favQty, setFavQty] = useState(1)
   const [dupKey, setDupKey] = useState<string | null>(null)
   const [dupQty, setDupQty] = useState(1)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [favourites, setFavourites] = useState<Favourite[]>(() => getFavourites())
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -327,8 +330,16 @@ Be realistic. UK measurements and British English.`
               <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{(item as FoodItem).calories}</div>
               <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>kcal</div>
             </div>
-            <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
-              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>
+            {!isToday && copyToToday && (
+              <button onClick={() => {
+                copyToToday(item as FoodItem, undefined)
+                setCopiedKey(itemKey); setTimeout(() => setCopiedKey(k => k === itemKey ? null : k), 2000)
+              }} style={{ background: copiedKey === itemKey ? '#6a9e6a' : 'none', border: `1px solid ${copiedKey === itemKey ? '#6a9e6a' : '#e0e0e0'}`, color: copiedKey === itemKey ? '#fff' : '#767676', borderRadius: 6, fontSize: 11, fontWeight: 600, lineHeight: 1, padding: '3px 7px', marginTop: 2, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {copiedKey === itemKey ? '✓' : '→ today'}
+              </button>
+            )}
+            {isToday && <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
+              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>}
             <button onClick={() => removeFood(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2, cursor: 'pointer' }}>×</button>
           </div>
         </div>
@@ -349,8 +360,16 @@ Be realistic. UK measurements and British English.`
               <div style={{ fontWeight: 700, color: '#111111', fontSize: 18, lineHeight: 1 }}>{((item as DrinkItem).units || 0).toFixed(1)}u</div>
               <div style={{ fontSize: 12, color: '#767676', marginTop: 1 }}>units</div>
             </div>
-            <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
-              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>
+            {!isToday && copyToToday && (
+              <button onClick={() => {
+                copyToToday(undefined, item as DrinkItem)
+                setCopiedKey(itemKey); setTimeout(() => setCopiedKey(k => k === itemKey ? null : k), 2000)
+              }} style={{ background: copiedKey === itemKey ? '#6a9e6a' : 'none', border: `1px solid ${copiedKey === itemKey ? '#6a9e6a' : '#e0e0e0'}`, color: copiedKey === itemKey ? '#fff' : '#767676', borderRadius: 6, fontSize: 11, fontWeight: 600, lineHeight: 1, padding: '3px 7px', marginTop: 2, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {copiedKey === itemKey ? '✓' : '→ today'}
+              </button>
+            )}
+            {isToday && <button onClick={() => { setDupKey(dupKey === itemKey ? null : itemKey); setDupQty(1) }}
+              style={{ background: dupKey === itemKey ? '#9ebd6e' : 'none', border: `1px solid ${dupKey === itemKey ? '#9ebd6e' : '#e0e0e0'}`, color: dupKey === itemKey ? '#fff' : '#999999', borderRadius: 6, fontSize: 15, fontWeight: 700, lineHeight: 1, padding: '2px 6px', marginTop: 2, cursor: 'pointer' }}>+</button>}
             <button onClick={() => removeDrink(item._i)} style={{ background: 'none', border: 'none', color: '#999999', fontSize: 18, lineHeight: 1, padding: '0 2px', marginTop: 2, cursor: 'pointer' }}>×</button>
           </div>
         </div>

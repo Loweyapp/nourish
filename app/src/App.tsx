@@ -3,6 +3,7 @@ import {
   getApiKey, getFitbitToken,
   today, formatDate,
 } from './lib'
+import type { FoodItem, DrinkItem } from './types'
 import { Icon } from './components/shared'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import SettingsScreen from './components/SettingsScreen'
@@ -114,7 +115,12 @@ export default function App() {
       </div>
       <StatsBar entries={entries} />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 14px 80px' }}>
-        {tab === 'log' && <LogTab entry={entries[currentDay] ?? {}} allEntries={entries} currentDay={currentDay} onChange={data => updateEntry(currentDay, data)} fitbitConnected={fitbitConnected} />}
+        {tab === 'log' && <LogTab entry={entries[currentDay] ?? {}} allEntries={entries} currentDay={currentDay} onChange={data => updateEntry(currentDay, data)} fitbitConnected={fitbitConnected} isToday={isToday}
+            copyToToday={(food?: FoodItem, drink?: DrinkItem) => {
+              const td = today()
+              const e = entries[td] ?? {}
+              updateEntry(td, { ...e, ...(food ? { food: [...(e.food ?? []), food] } : {}), ...(drink ? { alcohol: [...(e.alcohol ?? []), drink] } : {}) })
+            }} />}
         {tab === 'journal' && <JournalTab entry={entries[currentDay] ?? {}} allEntries={entries} currentDay={currentDay} onChange={data => updateEntry(currentDay, data)} />}
         {tab === 'history' && <HistoryTab entries={entries} onSelectDay={selectDay} />}
         {tab === 'insights' && <InsightsTab entries={entries} />}
