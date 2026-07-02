@@ -5,7 +5,7 @@ import {
   FB_FETCH_KEY, FB_VERIFIER_KEY,
   ls, DUMMY_SEEDED_KEY,
   saveGDriveToken, isGDriveConnected, shouldAutoBackup, backupToDrive,
-  exchangeCode, fetchFitbitDay, saveFitbitToken,
+  exchangeCode, fetchFitbitDay, fetchCachedFitbit, registerTokenWithWorker, saveFitbitToken,
   today, clearDummyData,
 } from '../lib'
 
@@ -42,7 +42,9 @@ export function useEntries() {
       ls.del(FB_VERIFIER_KEY)
       window.history.replaceState({}, '', window.location.pathname)
       exchangeCode(code, verifier).then(tokenData => {
-        saveFitbitToken({ ...tokenData, expires_at: Date.now() + tokenData.expires_in * 1000 })
+        const token = { ...tokenData, expires_at: Date.now() + tokenData.expires_in * 1000 }
+        saveFitbitToken(token)
+        registerTokenWithWorker(token.refresh_token)
         fetchFitbitDay().then(fitbit => {
           const td = today()
           const updated = { ...loadEntries(), [td]: { ...(loadEntries()[td] ?? {}), fitbit } }
@@ -66,14 +68,27 @@ export function useEntries() {
     const fetchedAt = current[today()]?.fitbit?.fetchedAt ?? 0
     const stale = Date.now() - fetchedAt > 60 * 60 * 1000
     if (!stale) return
-    fetchFitbitDay().then(fitbit => {
-      const td = today()
-      setEntries(prev => {
-        const updated = { ...prev, [td]: { ...(prev[td] ?? {}), fitbit } }
-        saveEntries(updated)
-        return updated
+    // Try background-cached data first; fall back to direct fetch
+    fetchCachedFitbit().then(cached => {
+      if (cached && cached.fetchedAt > fetchedAt) {
+        const td = today()
+        setEntries(prev => {
+          const updated = { ...prev, [td]: { ...(prev[td] ?? {}), fitbit: cached } }
+          saveEntries(updated)
+          return updated
+        })
+        ls.setStr(FB_FETCH_KEY, td)
+        return
+      }
+      return fetchFitbitDay().then(fitbit => {
+        const td = today()
+        setEntries(prev => {
+          const updated = { ...prev, [td]: { ...(prev[td] ?? {}), fitbit } }
+          saveEntries(updated)
+          return updated
+        })
+        ls.setStr(FB_FETCH_KEY, td)
       })
-      ls.setStr(FB_FETCH_KEY, td)
     }).catch(() => {})
   }
 

@@ -20,6 +20,7 @@ export const FAVOURITES_KEY      = 'nourish-favourites'
 export const LOG_LAYOUT_KEY      = 'nourish-log-layout'
 export const INSIGHTS_LAYOUT_KEY = 'nourish-insights-layout'
 export const USAGE_KEY           = 'nourish-usage-total'
+export const SYNC_SECRET_KEY     = 'nourish-sync-secret'
 
 // ── ls helper — verbatim from index.html ──────────────────────────────────────
 // The cast in ls.get is intentional: we trust that what was stored is of type T.
@@ -136,6 +137,16 @@ export function incrementFavUseCount(texts: string[]): void {
 
 export function removeFavourite(nameOrText: string): void {
   saveFavourites(getFavourites().filter((f) => (f.name || f.text) !== nameOrText))
+}
+
+export function getSyncSecret(): string {
+  let secret = ls.str(SYNC_SECRET_KEY)
+  if (!secret) {
+    secret = Array.from(crypto.getRandomValues(new Uint8Array(18)))
+      .map(b => b.toString(16).padStart(2, '0')).join('')
+    ls.setStr(SYNC_SECRET_KEY, secret)
+  }
+  return secret
 }
 
 export function isGDriveConnected(): boolean {

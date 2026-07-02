@@ -6,6 +6,7 @@ import {
   getFitbitToken,
   saveFitbitToken,
   clearFitbitToken,
+  getSyncSecret,
 } from './storage'
 import { today, REDIRECT_URI } from './utils'
 
@@ -66,6 +67,16 @@ export async function exchangeCode(code: string, verifier: string): Promise<Fitb
   return data
 }
 
+// Push refresh token to Worker KV so background cron can use it
+export function registerTokenWithWorker(refresh_token: string): void {
+  const secret = getSyncSecret()
+  fetch(FITBIT_PROXY.replace('/fitbit', '') + '/fitbit/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token, secret }),
+  }).catch(() => {})
+}
+
 export async function refreshFitbitToken(): Promise<string | null> {
   const stored = getFitbitToken()
   if (!stored?.refresh_token) return null
@@ -82,7 +93,30 @@ export async function refreshFitbitToken(): Promise<string | null> {
   if (!res.ok) { clearFitbitToken(); return null }
   const token: FitbitToken = { ...data, expires_at: Date.now() + data.expires_in * 1000 }
   saveFitbitToken(token)
+  // Keep Worker in sync with our new refresh token
+  registerTokenWithWorker(token.refresh_token)
   return token.access_token
+}
+
+// Fetch background-synced data from Worker KV (may return null if nothing cached)
+export async function fetchCachedFitbit(): Promise<FitbitData | null> {
+  try {
+    const secret = getSyncSecret()
+    const res = await fetch(
+      FITBIT_PROXY.replace('/fitbit', '') + '/fitbit/cached',
+      { headers: { 'X-Nourish-Secret': secret } },
+    )
+    if (!res.ok) return null
+    const data = await res.json() as (FitbitData & { date?: string }) | null
+    if (!data) return null
+    // Only use cached data if it's for today (Worker uses UTC, we use local — may differ by 1h in BST)
+    const todayLocal = today()
+    const todayUTC = new Date().toISOString().split('T')[0]
+    if (data.date !== todayLocal && data.date !== todayUTC) return null
+    return data
+  } catch {
+    return null
+  }
 }
 
 export async function getFitbitAccessToken(): Promise<string | null> {
