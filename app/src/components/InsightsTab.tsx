@@ -22,17 +22,77 @@ const ENERGY = [
   { emoji: '🔥', label: 'Peak', value: 5 },
 ]
 
-type WD = { d: string; w: number }
-type BD = { d: string; sys: number; dia: number; pulse?: number | null; label?: string }
+type Period = '7d' | '30d' | '90d' | '365d' | 'all'
+type WD = { d: string; date: string; w: number }
+type BD = { d: string; date: string; sys: number; dia: number; pulse?: number | null; label?: string }
+type XScale = { xFor: (date: string) => number; width: number; gridDates: Array<{ x: number; label: string }> }
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function buildXScale(period: Period, allEntries: Record<string, DayEntry>): XScale {
+  const now = new Date(); now.setHours(23, 59, 59, 999)
+  const endMs = now.getTime()
+  let startMs: number
+  if (period === 'all') {
+    const oldest = Object.keys(allEntries).sort()[0]
+    startMs = oldest ? new Date(oldest + 'T00:00:00').getTime() : endMs - 30 * 86400000
+  } else {
+    const days = { '7d': 7, '30d': 30, '90d': 90, '365d': 365 }[period]
+    startMs = endMs - days * 86400000
+  }
+  const spanMs = Math.max(endMs - startMs, 86400000)
+  const totalDays = spanMs / 86400000
+  const pxPerDay = period === '7d' ? 46 : period === '30d' ? 22 : period === '90d' ? 10 : period === '365d' ? 4 : Math.max(3, 300 / totalDays)
+  const PAD_L = 32, PAD_R = 16
+  const width = Math.max(PAD_L + totalDays * pxPerDay + PAD_R, 300)
+  const xFor = (date: string) => {
+    const t = new Date(date + 'T12:00:00').getTime()
+    return PAD_L + ((t - startMs) / spanMs) * (width - PAD_L - PAD_R)
+  }
+  const gridDates: Array<{ x: number; label: string }> = []
+  const useMonthly = period === '90d' || period === '365d' || period === 'all'
+  const monthSkip = period === '365d' ? 2 : period === 'all' ? Math.max(1, Math.ceil(totalDays / 90)) : 1
+  if (useMonthly) {
+    const cur = new Date(startMs); cur.setDate(1); cur.setHours(12, 0, 0, 0)
+    let monthCount = 0
+    while (cur.getTime() <= endMs) {
+      if (monthCount % monthSkip === 0) {
+        const ds = toDateStr(cur)
+        gridDates.push({ x: xFor(ds), label: cur.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) })
+      }
+      monthCount++; cur.setMonth(cur.getMonth() + 1)
+    }
+  } else {
+    const interval = period === '7d' ? 1 : 7
+    const cur = new Date(startMs); cur.setHours(12, 0, 0, 0)
+    while (cur.getTime() <= endMs) {
+      const ds = toDateStr(cur)
+      gridDates.push({ x: xFor(ds), label: cur.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) })
+      cur.setDate(cur.getDate() + interval)
+    }
+  }
+  return { xFor, width, gridDates }
+}
+
+function XGrid({ xScale, height }: { xScale: XScale; height: number }) {
+  return <>{xScale.gridDates.map((g, i) => (
+    <g key={i}>
+      <line x1={g.x} x2={g.x} y1={0} y2={height - 16} stroke="#f0f0f0" strokeWidth={1} />
+      <text x={g.x} y={height - 3} textAnchor="middle" fontSize={10} fill="#aaaaaa">{g.label}</text>
+    </g>
+  ))}</>
+}
 
 interface WeightTrendSectionProps {
   weightData: WD[]
   minW: number
   maxW: number
-  allEntries: Record<string, DayEntry>
+  xScale: XScale
 }
 
-function WeightTrendSection({ weightData, minW, maxW }: WeightTrendSectionProps) {
+function WeightTrendSection({ weightData, minW, maxW, xScale }: WeightTrendSectionProps) {
   const [insight, setInsight] = useState('')
   const [loading, setLoading] = useState(false)
   const [analysed, setAnalysed] = useState(false)
@@ -51,11 +111,12 @@ function WeightTrendSection({ weightData, minW, maxW }: WeightTrendSectionProps)
     setLoading(false)
   }
 
-  const W = Math.max(weightData.length * 64, 300)
-  const H = 130, padT = 14, chartH = 80
+  const H = 144, padT = 14, chartH = 100
   const yFor = (w: number) => maxW === minW ? padT + chartH / 2 : padT + chartH - ((w - minW) / (maxW - minW)) * chartH
-  const pts = weightData.map((d, i) => `${i * 64 + 32},${yFor(d.w)}`).join(' ')
-  const areaBottom = `${(weightData.length - 1) * 64 + 32},${padT + chartH} 26,${padT + chartH}`
+  const pts = weightData.map(d => `${xScale.xFor(d.date)},${yFor(d.w)}`).join(' ')
+  const firstX = xScale.xFor(weightData[0]!.date)
+  const lastX = xScale.xFor(weightData[weightData.length - 1]!.date)
+  const areaBottom = `${lastX},${padT + chartH} ${firstX},${padT + chartH}`
   const trend = weightData.length >= 2 ? (weightData[weightData.length - 1]!.w - weightData[0]!.w).toFixed(1) : null
   const trendColor = trend === null ? '#767676' : Number(trend) < -0.3 ? '#6a9e6a' : Number(trend) > 0.3 ? '#e8457a' : '#767676'
 
@@ -68,24 +129,24 @@ function WeightTrendSection({ weightData, minW, maxW }: WeightTrendSectionProps)
         </div>
       )}
       <ScrollRight>
-        <svg width={W} height={H}>
+        <svg width={xScale.width} height={H}>
           <defs>
             <linearGradient id="wtGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={trendColor} stopOpacity="0.12" />
               <stop offset="100%" stopColor={trendColor} stopOpacity="0" />
             </linearGradient>
           </defs>
+          <XGrid xScale={xScale} height={H} />
           {([minW, (minW + maxW) / 2, maxW] as number[]).map((v, i) => {
             const y = yFor(v)
-            return <g key={i}><line x1={0} x2={W} y1={y} y2={y} stroke="#f5f5f5" /><text x={2} y={y - 2} fontSize={12} fill="#767676">{v.toFixed(1)}</text></g>
+            return <g key={i}><line x1={0} x2={xScale.width} y1={y} y2={y} stroke="#f5f5f5" /><text x={2} y={y - 2} fontSize={11} fill="#767676">{v.toFixed(1)}</text></g>
           })}
           <polygon points={pts + ' ' + areaBottom} fill="url(#wtGrad)" />
           <polyline points={pts} fill="none" stroke={trendColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
           {weightData.map((d, i) => (
             <g key={i}>
-              <circle cx={i * 64 + 32} cy={yFor(d.w)} r={4} fill={trendColor} />
-              <text x={i * 64 + 32} y={yFor(d.w) - 8} textAnchor="middle" fontSize={12} fontWeight="600" fill={trendColor}>{d.w}</text>
-              <text x={i * 64 + 32} y={H - 4} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+              <circle cx={xScale.xFor(d.date)} cy={yFor(d.w)} r={4} fill={trendColor} />
+              <text x={xScale.xFor(d.date)} y={yFor(d.w) - 8} textAnchor="middle" fontSize={11} fontWeight="600" fill={trendColor}>{d.w}</text>
             </g>
           ))}
         </svg>
@@ -109,9 +170,10 @@ interface BPTrendSectionProps {
   minBP: number
   maxBP: number
   allEntries: Record<string, DayEntry>
+  xScale: XScale
 }
 
-function BPTrendSection({ bpData, minBP, maxBP, allEntries }: BPTrendSectionProps) {
+function BPTrendSection({ bpData, minBP, maxBP, allEntries, xScale }: BPTrendSectionProps) {
   const [insight, setInsight] = useState('')
   const [loading, setLoading] = useState(false)
   const [analysed, setAnalysed] = useState(false)
@@ -153,8 +215,7 @@ Be direct and specific. British English. 4-5 sentences total.`
     navigator.clipboard.writeText(lines.join('\n')).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) }).catch(() => {})
   }
 
-  const W = Math.max(bpData.length * 64, 300)
-  const H = 130, pad = 10, chartH = 90
+  const H = 144, pad = 10, chartH = 110
   const bpRange = maxBP - minBP || 40
   const yFor = (v: number) => pad + chartH - ((v - minBP) / bpRange) * chartH
   const gridLines = [80, 90, 120, 140].filter(v => v >= minBP && v <= maxBP)
@@ -162,19 +223,20 @@ Be direct and specific. British English. 4-5 sentences total.`
   return (
     <Section title="BLOOD PRESSURE" accent="#e8457a">
       <ScrollRight>
-        <svg width={W} height={H}>
-          {gridLines.map(v => { const y = yFor(v); const isT = v === 140 || v === 90; return <g key={v}><line x1={0} x2={W} y1={y} y2={y} stroke={isT ? 'rgba(200,122,106,0.5)' : '#f5f5f5'} strokeDasharray={isT ? '4 2' : ''} /><text x={2} y={y - 2} fontSize={12} fill={isT ? '#e8457a' : '#767676'}>{v}</text></g> })}
-          <polyline points={bpData.map((d, i) => `${i * 64 + 32},${yFor(d.sys)}`).join(' ')} fill="none" stroke="#e8457a" strokeLinejoin="round" />
-          <polyline points={bpData.map((d, i) => `${i * 64 + 32},${yFor(d.dia)}`).join(' ')} fill="none" stroke="#5a8ad0" strokeLinejoin="round" strokeDasharray="4 2" />
+        <svg width={xScale.width} height={H}>
+          <XGrid xScale={xScale} height={H} />
+          {gridLines.map(v => { const y = yFor(v); const isT = v === 140 || v === 90; return <g key={v}><line x1={0} x2={xScale.width} y1={y} y2={y} stroke={isT ? 'rgba(200,122,106,0.5)' : '#f5f5f5'} strokeDasharray={isT ? '4 2' : ''} /><text x={2} y={y - 2} fontSize={11} fill={isT ? '#e8457a' : '#767676'}>{v}</text></g> })}
+          <polyline points={bpData.map(d => `${xScale.xFor(d.date)},${yFor(d.sys)}`).join(' ')} fill="none" stroke="#e8457a" strokeLinejoin="round" />
+          <polyline points={bpData.map(d => `${xScale.xFor(d.date)},${yFor(d.dia)}`).join(' ')} fill="none" stroke="#5a8ad0" strokeLinejoin="round" strokeDasharray="4 2" />
           {bpData.map((d, i) => {
             const cat = bpCategory(d.sys, d.dia)
+            const cx = xScale.xFor(d.date)
             return (<g key={i}>
-              <circle cx={i * 64 + 32} cy={yFor(d.sys)} r={5} fill={cat?.dot ?? '#e8457a'} />
-              <circle cx={i * 64 + 32} cy={yFor(d.dia)} r={4} fill="#5a8ad0" />
-              <text x={i * 64 + 32} y={yFor(d.sys) - 7} textAnchor="middle" fontSize={12} fill="#e8457a">{d.sys}</text>
-              <text x={i * 64 + 32} y={yFor(d.dia) + 14} textAnchor="middle" fontSize={12} fill="#5a8ad0">{d.dia}</text>
-              {d.pulse && <text x={i * 64 + 32} y={yFor(d.dia) + 24} textAnchor="middle" fontSize={12} fill="#767676">♥{d.pulse}</text>}
-              <text x={i * 64 + 32} y={H - 4} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+              <circle cx={cx} cy={yFor(d.sys)} r={5} fill={cat?.dot ?? '#e8457a'} />
+              <circle cx={cx} cy={yFor(d.dia)} r={4} fill="#5a8ad0" />
+              <text x={cx} y={yFor(d.sys) - 7} textAnchor="middle" fontSize={11} fill="#e8457a">{d.sys}</text>
+              <text x={cx} y={yFor(d.dia) + 14} textAnchor="middle" fontSize={11} fill="#5a8ad0">{d.dia}</text>
+              {d.pulse && <text x={cx} y={yFor(d.dia) + 24} textAnchor="middle" fontSize={10} fill="#767676">♥{d.pulse}</text>}
             </g>)
           })}
         </svg>
@@ -207,27 +269,39 @@ interface InsightsTabProps {
   entries: Record<string, DayEntry>
 }
 
+const PERIODS: Array<[Period, string]> = [['7d', '1W'], ['30d', '1M'], ['90d', '3M'], ['365d', '1Y'], ['all', 'All']]
+
 export default function InsightsTab({ entries }: InsightsTabProps) {
   const [insight, setInsight] = useState('')
   const [loading, setLoading] = useState(false)
   const [analysed, setAnalysed] = useState(false)
   const [error, setError] = useState('')
   const [editLayout, setEditLayout] = useState(false)
+  const [period, setPeriod] = useState<Period>('30d')
 
-  const days = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14)
-  const moodData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), mood: e.mood ?? 0, energy: e.energy ?? 0 }))
-  const calData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), cals: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0) }))
-  const weightData: WD[] = [...days].filter(([, e]) => e.weight).reverse().map(([d, e]) => ({ d: shortDate(d), w: parseFloat(e.weight!) }))
-  const stepsData = [...days].filter(([, e]) => e.fitbit?.steps).reverse().map(([d, e]) => ({ d: shortDate(d), s: e.fitbit!.steps }))
-  const alcData = [...days].reverse().map(([d, e]) => ({ d: shortDate(d), u: parseFloat(((e.alcohol ?? []).reduce((s, a) => s + (a.units || 0), 0)).toFixed(1)) }))
-  const bpData: BD[] = [...days].sort((a, b) => a[0].localeCompare(b[0])).flatMap(([d, e]) => {
+  const xScale = buildXScale(period, entries)
+
+  const cutoffMs = period === 'all'
+    ? 0
+    : (() => { const now = new Date(); now.setHours(23, 59, 59, 999); return now.getTime() - { '7d': 7, '30d': 30, '90d': 90, '365d': 365 }[period] * 86400000 })()
+
+  const filteredDays = Object.entries(entries)
+    .filter(([d]) => new Date(d + 'T00:00:00').getTime() >= cutoffMs)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+
+  const moodData = filteredDays.map(([d, e]) => ({ d: shortDate(d), date: d, mood: e.mood ?? 0, energy: e.energy ?? 0 }))
+  const calData = filteredDays.map(([d, e]) => ({ d: shortDate(d), date: d, cals: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0) }))
+  const weightData: WD[] = filteredDays.filter(([, e]) => e.weight).map(([d, e]) => ({ d: shortDate(d), date: d, w: parseFloat(e.weight!) }))
+  const stepsData = filteredDays.filter(([, e]) => e.fitbit?.steps).map(([d, e]) => ({ d: shortDate(d), date: d, s: e.fitbit!.steps }))
+  const alcData = filteredDays.map(([d, e]) => ({ d: shortDate(d), date: d, u: parseFloat(((e.alcohol ?? []).reduce((s, a) => s + (a.units || 0), 0)).toFixed(1)) }))
+  const bpData: BD[] = filteredDays.flatMap(([d, e]) => {
     const labelAbbr: Record<string, string> = { Morning: 'AM', Afternoon: 'PM', Evening: 'Eve', Other: '' }
     if (e.bpSessions?.length) {
       return [...e.bpSessions]
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-        .map(s => ({ d: shortDate(d) + (labelAbbr[s.label] ? ' ' + labelAbbr[s.label] : ''), sys: s.avg.sys, dia: s.avg.dia, pulse: s.avg.pulse ?? null, label: s.label }))
+        .map(s => ({ d: shortDate(d) + (labelAbbr[s.label] ? ' ' + labelAbbr[s.label] : ''), date: d, sys: s.avg.sys, dia: s.avg.dia, pulse: s.avg.pulse ?? null, label: s.label }))
     }
-    if (e.bpSystolic && e.bpDiastolic) return [{ d: shortDate(d), sys: e.bpSystolic, dia: e.bpDiastolic, pulse: e.bpPulse ?? null }]
+    if (e.bpSystolic && e.bpDiastolic) return [{ d: shortDate(d), date: d, sys: e.bpSystolic, dia: e.bpDiastolic, pulse: e.bpPulse ?? null }]
     return []
   })
 
@@ -239,9 +313,11 @@ export default function InsightsTab({ entries }: InsightsTabProps) {
   const minBP = Math.min(...bpData.map(d => d.dia), 60)
   const maxBP = Math.max(...bpData.map(d => d.sys), 160)
 
+  const last14Days = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14)
+
   const getInsights = async () => {
     setLoading(true); setError('')
-    const summary = days.map(([d, e]) => ({
+    const summary = last14Days.map(([d, e]) => ({
       date: d,
       calories: (e.food ?? []).reduce((s, f) => s + (f.calories || 0), 0) + (e.alcohol ?? []).reduce((s, a) => s + (a.calories || 0), 0),
       meals: (e.food ?? []).map(f => f.text).join('; '),
@@ -274,25 +350,25 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
     setLoading(false)
   }
 
-  if (days.length < 2) return <div style={{ textAlign: 'center', padding: 40, color: '#767676', fontSize: 15 }}>Log at least 2 days to unlock insights</div>
+  const allDays = Object.entries(entries)
+  if (allDays.length < 2) return <div style={{ textAlign: 'center', padding: 40, color: '#767676', fontSize: 15 }}>Log at least 2 days to unlock insights</div>
 
   const INSIGHTS_DEFAULT = ['mood_energy', 'calories', 'steps', 'weight', 'alcohol', 'bp', 'ai']
 
+  const barWidth = (data: { date: string }[]) => Math.max(4, Math.min(20, xScale.width / Math.max(data.length, 1) - 4))
+
   const renderSection = (id: string) => {
     switch (id) {
-      case 'mood_energy': return (
+      case 'mood_energy': return moodData.some(d => d.mood > 0 || d.energy > 0) ? (
         <Section title="MOOD & ENERGY" accent="#805d93">
           {(() => {
-            const W = Math.max(moodData.length * 64, 300)
-            const H = 130, padT = 10, chartH = 90
+            const H = 144, padT = 10, chartH = 110
             const yFor = (v: number) => padT + chartH - ((v - 1) / 4) * chartH
-            const moodPts = moodData.map((d, i) => `${i * 64 + 32},${yFor(d.mood || 1)}`).join(' ')
-            const engPts = moodData.map((d, i) => `${i * 64 + 32},${yFor(d.energy || 1)}`).join(' ')
-            const moodArea = moodPts + ` ${(moodData.length - 1) * 64 + 32},${H} 26,${H}`
-            const engArea = engPts + ` ${(moodData.length - 1) * 64 + 32},${H} 26,${H}`
+            const moodPts = moodData.filter(d => d.mood > 0).map(d => `${xScale.xFor(d.date)},${yFor(d.mood)}`).join(' ')
+            const engPts = moodData.filter(d => d.energy > 0).map(d => `${xScale.xFor(d.date)},${yFor(d.energy)}`).join(' ')
             return (
               <ScrollRight>
-                <svg width={W} height={H + 14}>
+                <svg width={xScale.width} height={H}>
                   <defs>
                     <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#805d93" stopOpacity="0.12" />
@@ -303,16 +379,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                       <stop offset="100%" stopColor="#26b5a8" stopOpacity="0" />
                     </linearGradient>
                   </defs>
-                  {[1, 2, 3, 4, 5].map(v => <line key={v} x1={0} x2={W} y1={yFor(v)} y2={yFor(v)} stroke="#f5f5f5" />)}
-                  <polygon points={moodArea} fill="url(#moodGrad)" />
-                  <polygon points={engArea} fill="url(#engGrad)" />
-                  <polyline points={moodPts} fill="none" stroke="#805d93" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-                  <polyline points={engPts} fill="none" stroke="#26b5a8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5 3" />
+                  <XGrid xScale={xScale} height={H} />
+                  {[1, 2, 3, 4, 5].map(v => <line key={v} x1={0} x2={xScale.width} y1={yFor(v)} y2={yFor(v)} stroke="#f5f5f5" />)}
+                  {moodPts && <polyline points={moodPts} fill="none" stroke="#805d93" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+                  {engPts && <polyline points={engPts} fill="none" stroke="#26b5a8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5 3" />}
                   {moodData.map((d, i) => (
                     <g key={i}>
-                      <circle cx={i * 64 + 32} cy={yFor(d.mood || 1)} r={4} fill="#805d93" />
-                      <circle cx={i * 64 + 32} cy={yFor(d.energy || 1)} r={3} fill="#26b5a8" />
-                      <text x={i * 64 + 32} y={H + 12} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+                      {d.mood > 0 && <circle cx={xScale.xFor(d.date)} cy={yFor(d.mood)} r={4} fill="#805d93" />}
+                      {d.energy > 0 && <circle cx={xScale.xFor(d.date)} cy={yFor(d.energy)} r={3} fill="#26b5a8" />}
                     </g>
                   ))}
                 </svg>
@@ -324,29 +398,30 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
             <span style={{ color: '#555555', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 16, height: 2, background: '#26b5a8', borderRadius: 2, display: 'inline-block' }} />Energy</span>
           </div>
         </Section>
-      )
+      ) : null
       case 'calories': return calData.some(d => d.cals > 0) ? (() => {
         const avgCals = Math.round(calData.filter(d => d.cals > 0).reduce((s, d) => s + d.cals, 0) / calData.filter(d => d.cals > 0).length)
+        const bw = barWidth(calData)
         return (
           <Section title="DAILY CALORIES" accent="#9ebd6e">
             {(() => {
-              const W = Math.max(calData.length * 64, 300)
-              const pad = 22, barH = 80
+              const H = 144, pad = 22, barH = 100
               const aY = pad + barH - (avgCals / maxCals) * barH
               return (
                 <ScrollRight>
-                  <svg width={W} height={140}>
-                    <line x1={0} x2={W} y1={aY} y2={aY} stroke="#9ebd6e44" strokeDasharray="4 3" />
-                    <text x={4} y={aY - 3} fontSize={12} fill="#767676">avg {avgCals}</text>
+                  <svg width={xScale.width} height={H}>
+                    <XGrid xScale={xScale} height={H} />
+                    <line x1={0} x2={xScale.width} y1={aY} y2={aY} stroke="#9ebd6e44" strokeDasharray="4 3" />
+                    <text x={4} y={aY - 3} fontSize={11} fill="#767676">avg {avgCals}</text>
                     {calData.map((d, i) => {
                       const h = (d.cals / maxCals) * barH
                       const over = d.cals > 2500
                       const barTop = pad + barH - h
+                      const cx = xScale.xFor(d.date)
                       return (
                         <g key={i}>
-                          <rect x={i * 64 + 19} y={barTop} width={26} height={h || 2} rx={5} fill={over ? '#e8457a' : '#9ebd6e'} opacity={d.cals ? 1 : 0.2} />
-                          {d.cals > 0 && <text x={i * 64 + 32} y={Math.max(barTop - 5, 13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.cals}</text>}
-                          <text x={i * 64 + 32} y={pad + barH + 18} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+                          <rect x={cx - bw / 2} y={barTop} width={bw} height={h || 2} rx={3} fill={over ? '#e8457a' : '#9ebd6e'} opacity={d.cals ? 1 : 0.2} />
+                          {d.cals > 0 && <text x={cx} y={Math.max(barTop - 4, 12)} textAnchor="middle" fontSize={10} fontWeight="600" fill="#555555">{d.cals}</text>}
                         </g>
                       )
                     })}
@@ -361,24 +436,25 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
       case 'steps': return stepsData.length >= 2 ? (
         <Section title="DAILY STEPS" accent="#4a86d8">
           {(() => {
-            const W = Math.max(stepsData.length * 64, 300)
-            const pad = 22, barH = 80
+            const H = 144, pad = 22, barH = 100
             const gY = pad + barH - (10000 / maxSteps) * barH
+            const bw = barWidth(stepsData)
             return (
               <ScrollRight>
-                <svg width={W} height={140}>
-                  <line x1={0} x2={W} y1={gY} y2={gY} stroke="#4a86d844" strokeDasharray="4 3" />
-                  <text x={4} y={gY - 3} fontSize={12} fill="#767676">10k goal</text>
+                <svg width={xScale.width} height={H}>
+                  <XGrid xScale={xScale} height={H} />
+                  <line x1={0} x2={xScale.width} y1={gY} y2={gY} stroke="#4a86d844" strokeDasharray="4 3" />
+                  <text x={4} y={gY - 3} fontSize={11} fill="#767676">10k goal</text>
                   {stepsData.map((d, i) => {
                     const h = (d.s / maxSteps) * barH
                     const met = d.s >= 10000
                     const label = d.s >= 1000 ? Math.round(d.s / 100) / 10 + 'k' : String(d.s)
                     const barTop = pad + barH - h
+                    const cx = xScale.xFor(d.date)
                     return (
                       <g key={i}>
-                        <rect x={i * 64 + 19} y={barTop} width={26} height={h || 2} rx={5} fill={met ? '#9ebd6e' : '#4a86d8'} />
-                        <text x={i * 64 + 32} y={Math.max(barTop - 5, 13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{label}</text>
-                        <text x={i * 64 + 32} y={pad + barH + 18} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+                        <rect x={cx - bw / 2} y={barTop} width={bw} height={h || 2} rx={3} fill={met ? '#9ebd6e' : '#4a86d8'} />
+                        <text x={cx} y={Math.max(barTop - 4, 12)} textAnchor="middle" fontSize={10} fontWeight="600" fill="#555555">{label}</text>
                       </g>
                     )
                   })}
@@ -390,15 +466,15 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         </Section>
       ) : null
       case 'weight': return weightData.length >= 2 ? (
-        <WeightTrendSection weightData={weightData} minW={minW} maxW={maxW} allEntries={entries} />
+        <WeightTrendSection weightData={weightData} minW={minW} maxW={maxW} xScale={xScale} />
       ) : null
       case 'alcohol': return alcData.some(d => d.u > 0) ? (
         <Section title="ALCOHOL (UNITS)" accent="#f59c38">
           {(() => {
-            const W = Math.max(alcData.length * 64, 300)
             const totalUnits = alcData.reduce((s, d) => s + d.u, 0).toFixed(1)
-            const pad = 22, barH = 80
+            const H = 144, pad = 22, barH = 100
             const gY = pad + barH - (2 / maxAlc) * barH
+            const bw = barWidth(alcData)
             return (
               <>
                 <div style={{ marginBottom: 10, display: 'flex', alignItems: 'baseline', gap: 6 }}>
@@ -406,18 +482,19 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
                   <span style={{ fontSize: 12, color: '#767676' }}>units this period</span>
                 </div>
                 <ScrollRight>
-                  <svg width={W} height={140}>
-                    <line x1={0} x2={W} y1={gY} y2={gY} stroke="#f59c3844" strokeDasharray="4 3" />
-                    <text x={4} y={gY - 3} fontSize={12} fill="#767676">2u/day</text>
+                  <svg width={xScale.width} height={H}>
+                    <XGrid xScale={xScale} height={H} />
+                    <line x1={0} x2={xScale.width} y1={gY} y2={gY} stroke="#f59c3844" strokeDasharray="4 3" />
+                    <text x={4} y={gY - 3} fontSize={11} fill="#767676">2u/day</text>
                     {alcData.map((d, i) => {
                       const h = (d.u / maxAlc) * barH
                       const col = d.u > 6 ? '#e8457a' : d.u > 2 ? '#f59c38' : '#6a9e6a'
                       const barTop = pad + barH - (h || 0)
+                      const cx = xScale.xFor(d.date)
                       return (
                         <g key={i}>
-                          <rect x={i * 64 + 19} y={barTop} width={26} height={h || 2} rx={5} fill={col} opacity={d.u > 0 ? 1 : 0.15} />
-                          {d.u > 0 && <text x={i * 64 + 32} y={Math.max(barTop - 5, 13)} textAnchor="middle" fontSize={12} fontWeight="600" fill="#555555">{d.u}</text>}
-                          <text x={i * 64 + 32} y={pad + barH + 18} textAnchor="middle" fontSize={12} fill="#767676">{d.d}</text>
+                          <rect x={cx - bw / 2} y={barTop} width={bw} height={h || 2} rx={3} fill={col} opacity={d.u > 0 ? 1 : 0.15} />
+                          {d.u > 0 && <text x={cx} y={Math.max(barTop - 4, 12)} textAnchor="middle" fontSize={10} fontWeight="600" fill="#555555">{d.u}</text>}
                         </g>
                       )
                     })}
@@ -434,7 +511,7 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
         </Section>
       ) : null
       case 'bp': return bpData.length >= 1 ? (
-        <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} />
+        <BPTrendSection bpData={bpData} minBP={minBP} maxBP={maxBP} allEntries={entries} xScale={xScale} />
       ) : null
       case 'ai': return (
         <Section title="AI PATTERN ANALYSIS" accent="#555555">
@@ -454,6 +531,14 @@ Write 4-6 specific, evidence-based bullet points from the actual data. Warm but 
 
   return (
     <div>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+        {PERIODS.map(([p, label]) => (
+          <button key={p} onClick={() => setPeriod(p)}
+            style={{ flex: 1, padding: '6px 0', borderRadius: 20, border: 'none', background: period === p ? '#9ebd6e' : '#f0f0f0', color: period === p ? '#fff' : '#767676', fontSize: 11, fontFamily: 'inherit', fontWeight: period === p ? 700 : 400, cursor: 'pointer' }}>
+            {label}
+          </button>
+        ))}
+      </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: editLayout ? 12 : 0 }}>
         <button onClick={() => setEditLayout(v => !v)}
           style={{ background: editLayout ? '#6a9e6a' : 'none', border: editLayout ? 'none' : '1.5px solid #efefef', color: editLayout ? '#fff' : '#767676', borderRadius: 10, padding: '6px 14px', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, marginBottom: editLayout ? 0 : 12 }}>
